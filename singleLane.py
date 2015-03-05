@@ -16,6 +16,7 @@ def main(n,o, limiter, solver):
     line1, line2, = pl.plot(x,rho[0,o:-o],'g',Length+x,rho[1,o:-o],'r')
     line1.axes.set_ylim(-.1,1.1)
     line2.axes.set_ylim(-.1,1.1)
+    pl.axes().set_aspect('equal')
     pl.draw()
 
     #pl.plot(x,rho[o:-o],label='t=0')
@@ -100,7 +101,6 @@ def ConsLaw(x, rho, Tinterval, limiter, solver, o, line1, line2):
             line1.set_ydata(rho[0,o:-o])
             line2.set_ydata(rho[1,o:-o])
             pl.draw()
-        #time.sleep(0.05)
 
     # end while
     return rho
@@ -123,11 +123,6 @@ def initializeRho(x,o):
     return rho
 
 def BC_inflow(rho,o,t):
-    ### inflow ###
-    #if (t>6):
-    #    rho[0] = 0
-    #else:
-    #    rho[0] = max(0,np.sin(t))
     rho[0] = max(0,np.sin(6*t))
     if o==2:
         rho[1] = cp(rho[0])
@@ -170,25 +165,35 @@ def mc(x,y,z):
 
 if __name__ == "__main__":
 
-    main(800,2,'minmod','upwind')
+    from optparse import OptionParser
+    usage = "usage: %prog [var=value]"
+    p = OptionParser(usage)
+    p.add_option("-d")
+    p.add_option("--n", type="int", help="number of points")
+    p.add_option("--order", type="int", help="order of the method")
+    p.add_option("--method", type="string", help="which method")
+    p.add_option("--limiter", type="string", help="which limiter")
+    (opts, args) = p.parse_args()
 
-    #from optparse import OptionParser
-    #usage = "usage: %prog [var=value]"
-    #p = OptionParser(usage)
-    #p.add_option("--n", type="int", help="number of points")
-    #p.add_option("--order", type="int", help="first or second order method")
-    #(opts, args) = p.parse_args()
+    if opts.n == None:
+        n = 50
+    else:
+        n = opts.n
 
-    #if opts.n == None:
-    #    n = 50
-    #else:
-    #    n = opts.n
+    if opts.order == None:
+        o = 1
+    else:
+        o = 2#opts.order
 
-    #if opts.order == None:
-    #    o = 1
-    #else:
-    #    o = opts.order
-    #    
-    #main(n,o)
+    if opts.method == None:
+        method = 'upwind'
+    else:
+        method = opts.method
 
+    if opts.limiter == None:
+        limiter = 'minmod'
+    else:
+        limiter = opts.limiter
+
+    main(n,o,limiter,method)
 
