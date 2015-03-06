@@ -1,7 +1,48 @@
 import numpy as np
-import pylab as pl
+#import pylab as pl
 from copy import copy as cp
 import time
+
+from OpenGL.GL import *
+from OpenGL.GLUT import *
+from OpenGL.GLU import *
+
+texture = 0
+
+#def displayFun():
+#    glClear(GL_COLOR_BUFFER_BIT)
+#    glFlush()
+
+
+def reshapeFun(w,h):
+    #if w>h:
+    #    glViewport((w-h)/2,0,h,h)
+    #else:
+    #    glViewport(0,(h-w)/2,w,w)
+    glClearColor(1.0,1.0,1.0,0.0)
+    glColor3f(0.0,0.0, 0.0)
+    glClear( GL_COLOR_BUFFER_BIT );
+
+def initFun():
+    glClear( GL_COLOR_BUFFER_BIT );
+    glClearColor(1.0,1.0,1.0,0.0)
+    glColor3f(0.0,0.0, 0.0)
+    global texture
+    texture = glGenTextures(1);
+    glBindTexture(GL_TEXTURE_1D, texture);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_1D, 0);
+
+    glClear( GL_COLOR_BUFFER_BIT );
+
+    glMatrixMode( GL_PROJECTION );
+    glLoadIdentity();
+    glOrtho(-1,1,-1,1,-1,1)
+
+    glMatrixMode( GL_MODELVIEW );
+    glLoadIdentity();
 
 def main(n,o, limiter, solver):
     Length = 2.
@@ -11,13 +52,13 @@ def main(n,o, limiter, solver):
     rho_r2 = initializeRho(x,o)
     rho = np.vstack([rho_r1,rho_r2])
 
-    pl.ion()
-    #pl.figure()
-    line1, line2, = pl.plot(x,rho[0,o:-o],'g',Length+x,rho[1,o:-o],'r')
-    line1.axes.set_ylim(-.1,1.1)
-    line2.axes.set_ylim(-.1,1.1)
-    pl.axes().set_aspect('equal')
-    pl.draw()
+    #pl.ion()
+    ##pl.figure()
+    #line1, line2, = pl.plot(x,rho[0,o:-o],'g',Length+x,rho[1,o:-o],'r')
+    #line1.axes.set_ylim(-.1,1.1)
+    #line2.axes.set_ylim(-.1,1.1)
+    #pl.axes().set_aspect('equal')
+    #pl.draw()
 
     #pl.plot(x,rho[o:-o],label='t=0')
 
@@ -25,12 +66,12 @@ def main(n,o, limiter, solver):
     Tintervals = np.linspace(0.,1.*T,num=T+1)
     for ti in range(Tintervals.shape[0]-1):
         #print Tintervals[ti:ti+2]
-        rho = ConsLaw(x, rho, Tintervals[ti:ti+2], limiter, solver, o, line1, line2)
+        rho = ConsLaw(x, rho, Tintervals[ti:ti+2], limiter, solver, o)#, line1, line2)
         #pl.plot(x,rho[o:-o],label='t=%0.2f'%Tintervals[ti+1])
     #pl.legend()
     #pl.show()
 
-def ConsLaw(x, rho, Tinterval, limiter, solver, o, line1, line2):
+def ConsLaw(x, rho, Tinterval, limiter, solver, o):#, line1, line2):
 
     dx = x[1]-x[0]
     n = x.shape[0]
@@ -97,11 +138,28 @@ def ConsLaw(x, rho, Tinterval, limiter, solver, o, line1, line2):
         if o==2:
             rho = 0.5*(rho + saverho)
 
-        if (count%15==0):
-            line1.set_ydata(rho[0,o:-o])
-            line2.set_ydata(rho[1,o:-o])
-            pl.draw()
+        if (count%10==0):
+            #line1.set_ydata(rho[0,o:-o])
+            #line2.set_ydata(rho[1,o:-o])
+            #pl.draw()
 
+
+            glEnable( GL_TEXTURE_1D );
+            glBindTexture( GL_TEXTURE_1D, texture );
+            for road in np.array((0,1)):
+                glTexImage1D(GL_TEXTURE_1D, 0, GL_RED, rho[road,o:-o].shape[0], 0, GL_RED, GL_FLOAT, rho[road,o:-o]);
+                glColor3ub( 255, 255, 255 );
+
+                glLineWidth( 10 );
+                glEnable(GL_LINE_SMOOTH);
+                glBegin( GL_LINES );
+                glTexCoord1i( 0 );
+                glVertex2f( -0.5+road/2., 0. );
+                glTexCoord1i( 1 );
+                glVertex2f(  0.0+road/2., 0. );
+                glEnd();
+
+            glFlush()
     # end while
     return rho
 
@@ -194,6 +252,14 @@ if __name__ == "__main__":
         limiter = 'minmod'
     else:
         limiter = opts.limiter
+
+    glutInit()
+    glutInitWindowSize(640,480)
+    glutCreateWindow("Traffic Simulation")
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB)
+    #glutDisplayFunc(displayFun)
+    glutReshapeFunc(reshapeFun)
+    initFun()
 
     main(n,o,limiter,method)
 
