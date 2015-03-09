@@ -1,12 +1,9 @@
 import numpy as np
 from copy import copy as cp
-import time
 
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
-
-texture = 0
 
 def slope(u,limiter):
     a = u[1:]-u[0:-1]
@@ -83,6 +80,7 @@ class Road:
         self.geo_IN = geo_IN
         self.geo_OUT = geo_OUT
         self.dx = np.linalg.norm(geo_IN - geo_OUT)/(1.*n)
+        self.n = n
 
 def Flux(rho, Umax):
     return rho*Umax*(1.-rho)
@@ -90,24 +88,27 @@ def Flux(rho, Umax):
 def Flux_drho(rho, Umax):
     return Umax*(1.-2.*rho)
 
+texture = 0
+width = 640
+height = 480
 
-#def displayFun():
-#    glClear(GL_COLOR_BUFFER_BIT)
-#    glFlush()
 
+def initGL():
 
-def reshapeFun(w,h):
-    #if w>h:
-    #    glViewport((w-h)/2,0,h,h)
-    #else:
-    #    glViewport(0,(h-w)/2,w,w)
-    glClearColor(1.0,1.0,1.0,0.0)
-    glColor3f(0.0,0.0, 0.0)
+    glutInit()
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB)
+
+    global width
+    global height
+    glutInitWindowSize(width,height)
+    if width>height:
+        glViewport(int((width-height)/2),0,height,height)
+    else:
+        glViewport(0,int((height-width)/2),width,width)
+    glutCreateWindow("Traffic Simulation")
+
     glClear( GL_COLOR_BUFFER_BIT );
-
-def initFun():
-    glClear( GL_COLOR_BUFFER_BIT );
-    glClearColor(1.0,1.0,1.0,0.0)
+    glClearColor(1.0,1.0,1.0,1.0)
     glColor3f(0.0,0.0, 0.0)
     global texture
     texture = glGenTextures(1);
@@ -126,30 +127,12 @@ def initFun():
     glMatrixMode( GL_MODELVIEW );
     glLoadIdentity();
 
-def main(n,o, limiter, solver):
-
-    roads = [Road() for i in range(2)]
-    for i in range(len(roads)):
-        roads[i].initializeRoad(n, np.array((-2.+i*2,.0)), np.array((-0.+i*2,0.)), o)
-
-    roads[0].bc_IN = -1
-    roads[0].bc_OUT = 1
-
-    roads[1].bc_IN = 0
-    roads[1].bc_OUT = -1
-
-    T = 20
-    Tintervals = np.linspace(0.,1.*T,num=T+1)
-    for ti in range(Tintervals.shape[0]-1):
-        roads = ConsLaw(roads, Tintervals[ti:ti+2], limiter, solver, o)
-
 def ConsLaw(roads, Tinterval, limiter, solver, o):
 
     t = cp(Tinterval[0])
 
     count = 0
     while t<Tinterval[1]:
-        count += 1
 
         eig = roads[0].maxEig()/roads[0].dx
         for i in range(1,len(roads)):
@@ -194,25 +177,43 @@ def ConsLaw(roads, Tinterval, limiter, solver, o):
             for i in range(len(roads)):
                 roads[i].rho = 0.5*(roads[i].rho + roads[i].rho_tmp)
 
-        if (count%10==0):
-            glEnable( GL_TEXTURE_1D );
-            glBindTexture( GL_TEXTURE_1D, texture );
-            for i in range(len(roads)):
-                glTexImage1D(GL_TEXTURE_1D, 0, GL_RED, roads[i].rho[o:-o].shape[0], 0, GL_RED, GL_FLOAT, roads[i].rho[o:-o]);
-                glColor3ub( 255, 255, 255 );
+        draw(roads, t, Tinterval, count)
 
-                glLineWidth( 10 );
-                glEnable(GL_LINE_SMOOTH);
-                glBegin( GL_LINES );
-                glTexCoord1i( 0 );
-                glVertex2f( roads[i].geo_IN[0], roads[i].geo_IN[1]);
-                glTexCoord1i( 1 );
-                glVertex2f( roads[i].geo_OUT[0], roads[i].geo_OUT[1]);
-                glEnd();
-
-            glFlush()
     # end while
     return roads
+
+def draw(roads, t, Tinterval, count):
+    if (t > Tinterval[0] + count/100.*(Tinterval[1]-Tinterval[0])):
+        count += 1
+        global width
+        global height
+        n_height = glutGet(GLUT_WINDOW_HEIGHT);
+        n_width = glutGet(GLUT_WINDOW_WIDTH);
+        if (n_height != height or n_width!= width):
+            width = n_width
+            height = n_height
+            if width>height:
+                glViewport(int((width-height)/2),0,height,height)
+            else:
+                glViewport(0,int((height-width)/2),width,width)
+            glClear(GL_COLOR_BUFFER_BIT)
+        #glColor3f(0.0,0.0, 0.0)
+        glColor3ub( 255, 255, 255 );
+        glEnable( GL_TEXTURE_1D );
+        glBindTexture( GL_TEXTURE_1D, texture );
+        for i in range(len(roads)):
+            glTexImage1D(GL_TEXTURE_1D, 0, GL_RED, roads[i].n, 0, GL_RED, GL_FLOAT, roads[i].rho[o:-o]);
+
+            glLineWidth( 10 );
+            glEnable(GL_LINE_SMOOTH);
+            glBegin( GL_LINES );
+            glTexCoord1i( 0 );
+            glVertex2f( roads[i].geo_IN[0], roads[i].geo_IN[1]);
+            glTexCoord1i( 1 );
+            glVertex2f( roads[i].geo_OUT[0], roads[i].geo_OUT[1]);
+            glEnd();
+
+        glFlush()
 
 
 
@@ -257,6 +258,31 @@ def mc(x,y,z):
     # all nonzero elements have the same sign now
     return np.sign(x)*np.minimum(np.abs(x),np.minimum(np.abs(y),np.abs(z)))
 
+def main(n,o, limiter, solver):
+
+    roads = [Road() for i in range(3)]
+    #for i in range(len(roads)):
+    #    roads[i].initializeRoad(n, np.array((-2.+i*2,.0)), np.array((-0.+i*2,0.)), o)
+
+    roads[0].initializeRoad(n, np.array((-2.,.0)), np.array((-0.,0.)), o)
+    roads[1].initializeRoad(int(n/2), np.array((0.,.0)), np.array((1.,0.)), o)
+    roads[2].initializeRoad(int(n/2), np.array((1.,.0)), np.array((2.,0.)), o)
+
+    roads[0].bc_IN = -1
+    roads[0].bc_OUT = 1
+
+    roads[1].bc_IN = 0
+    roads[1].bc_OUT = 2
+
+    roads[2].bc_IN = 1
+    roads[2].bc_OUT = -1
+
+    T = 20
+    Tintervals = np.linspace(0.,1.*T,num=T+1)
+    for ti in range(Tintervals.shape[0]-1):
+        roads = ConsLaw(roads, Tintervals[ti:ti+2], limiter, solver, o)
+
+
 if __name__ == "__main__":
 
     from optparse import OptionParser
@@ -289,13 +315,7 @@ if __name__ == "__main__":
     else:
         limiter = opts.limiter
 
-    glutInit()
-    glutInitWindowSize(640,480)
-    glutCreateWindow("Traffic Simulation")
-    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB)
-    #glutDisplayFunc(displayFun)
-    glutReshapeFunc(reshapeFun)
-    initFun()
+    initGL()
 
     main(n,o,limiter,method)
 
