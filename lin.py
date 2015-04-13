@@ -1,7 +1,7 @@
 import pylab as pl
 from GenericFVUtils import *
 
-a = 1.
+a = None
 
 def maxEig(U, dx, dy):
     global a
@@ -52,10 +52,7 @@ def linearProfiling(nx=1000, Tmax=1., order=1, limiter='minmod', method='upwind'
 
 def linear(nx=1000, Tmax=1., order=1, limiter='minmod', method='upwind', plotResult = True):
 
-    if order==1:
-        hcl = HyperbolicConsLawOrd1()
-    else:
-        hcl = HyperbolicConsLawOrd2()
+    hcl = HyperbolicConsLaw()
 
     if method=='LxF':
         numFluxX = numFluxX_LxF
@@ -98,15 +95,4 @@ def linear(nx=1000, Tmax=1., order=1, limiter='minmod', method='upwind', plotRes
         pl.plot(xCi,a,'k:')
 
     return xCi, hcl.U
-
-if __name__ == '__main__':
-
-    from optparse import OptionParser
-    usage = "usage: %prog [var=value]"
-    p = OptionParser(usage)
-    p.add_option("--nx", type="int")
-    p.add_option("--Tmax", type="float")
-    p.add_option("--order", type="int")
-    p.add_option("--limiter", type="str", help="choose between minmod, superbee, mc")
-    p.add_option("--method", type="str")
 

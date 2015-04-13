@@ -17,39 +17,66 @@ def mc(x,y,z):
     z[np.nonzero(dif)]=0.0
     return np.sign(x)*np.minimum(np.abs(x),np.minimum(np.abs(y),np.abs(z)))
 
-def getSlopeMMDim1(u, direction):
-    a = u[1:]-u[0:-1]
-    return minmod(a[0:-1],a[1:])
-def getSlopeMMDim2(u, direction):
-    if direction==1:
-        a = u[1:,:]-u[0:-1,:]
-        S = minmod(a[0:-1,:],a[1:,:])
+def composeLRstate(limiter, dim, order):
+    if order==1:
+        if dim==1:
+            def lrState(u, direction):
+                return u[0:-1], u[1:]
+        else:
+            def lrState(u, direction):
+                if direction==1:
+                    return u[0:-1,:], u[1:,:]
+                else:
+                    return u[:,0:-1], u[:,1:]
     else:
-        a = u[:,1:]-u[:,0:-1]
-        S = minmod(a[:,0:-1],a[:,1:])
-    return S
-def getSlopeSPDim1(u, direction):
-    a = u[1:]-u[0:-1]
-    return superbee(a[0:-1],a[1:])
-def getSlopeSPDim2(u, direction):
-    if direction==1:
-        a = u[1:,:]-u[0:-1,:]
-        S = superbee(a[0:-1,:],a[1:,:])
-    else:
-        a = u[:,1:]-u[:,0:-1]
-        S = superbee(a[:,0:-1],a[:,1:])
-    return S
-def getSlopeMCDim1(u, direction):
-    a = u[1:]-u[0:-1]
-    return mc(2.*a[0:-1],.5*(u[2:]-u[:-2]),2.*a[1:])
-def getSlopeMCDim2(u, direction):
-    if direction==1:
-        a = u[1:,:]-u[0:-1,:]
-        S = mc(2.*a[0:-1,:],.5*(u[2:,:]-u[:-2,:]),2.*a[1:,:])
-    else:
-        a = u[:,1:]-u[:,0:-1]
-        S = mc(2.*a[:,0:-1],.5*(u[:,2:]-u[:,:-2]),2.*a[:,1:])
-    return S
+        if dim==1:
+            if limiter=='minmod':
+                def lrState(u, direction):
+                    a = u[1:]-u[0:-1]
+                    S = 0.5*(np.sign(a[0:-1])+np.sign(a[1:]))*np.minimum(np.abs(a[0:-1]),np.abs(a[1:])) # limiter
+                    return u[1:-2] + 0.5*S[0:-1], u[2:-1] - 0.5*S[1:]
+            if limiter=='superbee':
+                def lrState(u, direction):
+                    a = u[1:]-u[0:-1]
+                    S = superbee(a[0:-1],a[1:]) # limiter
+                    return u[1:-2] + 0.5*S[0:-1], u[2:-1] - 0.5*S[1:]
+            if limiter=='mc':
+                def lrState(u, direction):
+                    a = u[1:]-u[0:-1]
+                    S = mc(2.*a[0:-1],.5*(u[2:]-u[:-2]),2.*a[1:]) # limiter
+                    return u[1:-2] + 0.5*S[0:-1], u[2:-1] - 0.5*S[1:]
+        else:
+            if limiter=='minmod':
+                def lrState(u, direction):
+                    if direction==1:
+                        a = u[1:,:]-u[0:-1,:]
+                        S = 0.5*(np.sign(a[0:-1,:])+np.sign(a[1:,:]))*np.minimum(np.abs(a[0:-1,:]),np.abs(a[1:,:])) # limiter
+                        return u[1:-2,:] + 0.5*S[0:-1,:], u[2:-1,:] - 0.5*S[1:,:]
+                    else:
+                        a = u[:,1:]-u[:,0:-1]
+                        S = 0.5*(np.sign(a[:,0:-1])+np.sign(a[:,1:]))*np.minimum(np.abs(a[:,0:-1]),np.abs(a[:,1:])) # limiter
+                        return u[:,1:-2] + 0.5*S[:,0:-1], u[:,2:-1] - 0.5*S[:,1:]
+            if limiter=='superbee':
+                def lrState(u, direction):
+                    if direction==1:
+                        a = u[1:,:]-u[0:-1,:]
+                        S = superbee(a[0:-1,:],a[1:,:]) # limiter
+                        return u[1:-2,:] + 0.5*S[0:-1,:], u[2:-1,:] - 0.5*S[1:,:]
+                    else:
+                        a = u[:,1:]-u[:,0:-1]
+                        S = superbee(a[:,0:-1],a[:,1:]) # limiter
+                        return u[:,1:-2] + 0.5*S[:,0:-1], u[:,2:-1] - 0.5*S[:,1:]
+            if limiter=='mc':
+                def lrState(u, direction):
+                    if direction==1:
+                        a = u[1:,:]-u[0:-1,:]
+                        S = mc(2.*a[0:-1,:],.5*(u[2:,:]-u[:-2,:]),2.*a[1:,:]) # limiter
+                        return u[1:-2,:] + 0.5*S[0:-1,:], u[2:-1,:] - 0.5*S[1:,:]
+                    else:
+                        a = u[:,1:]-u[:,0:-1]
+                        S = mc(2.*a[:,0:-1],.5*(u[:,2:]-u[:,:-2]),2.*a[:,1:]) # limiter
+                        return u[:,1:-2] + 0.5*S[:,0:-1], u[:,2:-1] - 0.5*S[:,1:]
+    return lrState
 
 def composeBC_W(bcfun, dim, order):
     if bcfun == None:
@@ -204,72 +231,13 @@ def composeBC_N(bcfun, order):
 class ConsQuantity:
     u = None
     u_tmp = None
-    numFx = None
-    numFy = None
     uW = None
     uS = None
     uE = None
     uN = None
-    getSlope = None
-    def initialize(self, uinit):
-        self.u = uinit
     def savetmp(self):
         self.u_tmp = 1.*self.u
 
-class ConsQuantityOrd1Dim1(ConsQuantity):
-    def initialize(self, limiter, uinit):
-        super().initialize(uinit)
-    def LRstate(self, direction):
-        uL = self.u[0:-1]
-        uR = self.u[1:]
-        return uL, uR
-
-class ConsQuantityOrd1Dim2(ConsQuantity):
-    def initialize(self, limiter, uinit):
-        super().initialize(uinit)
-    def LRstate(self, direction):
-        if direction==1:
-            uL = self.u[0:-1,:]
-            uR = self.u[1:,:]
-        else:
-            uL = self.u[:,0:-1]
-            uR = self.u[:,1:]
-        return uL, uR
-
-class ConsQuantityOrd2Dim1(ConsQuantity):
-    def initialize(self, limiter, uinit):
-        super().initialize(uinit)
-        if limiter=='minmod':
-            self.getSlope = getSlopeMMDim1
-        if limiter=='superbee':
-            self.getSlope = getSlopeSPDim1
-        if limiter=='mc':
-            self.getSlope = getSlopeMCDim1
-    def LRstate(self, direction):
-        S = self.getSlope(self.u,direction)
-        uL = self.u[1:-2] + 0.5*S[0:-1]
-        uR = self.u[2:-1] - 0.5*S[1:]
-        return uL, uR
-
-class ConsQuantityOrd2Dim2(ConsQuantity):
-    def initialize(self, limiter, uinit):
-        super().initialize(uinit)
-        if limiter=='minmod':
-            self.getSlope = getSlopeMMDim2
-        if limiter=='superbee':
-            self.getSlope = getSlopeSPDim2
-        if limiter=='mc':
-            self.getSlope = getSlopeMCDim2
-    def LRstate(self, direction):
-        if direction==1:
-            S = self.getSlope(self.u,direction)
-            uL = self.u[1:-2,:] + 0.5*S[0:-1,:]
-            uR = self.u[2:-1,:] - 0.5*S[1:,:]
-        else:
-            S = self.getSlope(self.u,direction)
-            uL = self.u[:,1:-2] + 0.5*S[:,0:-1]
-            uR = self.u[:,2:-1] - 0.5*S[:,1:]
-        return uL, uR
 
 class HyperbolicConsLaw:
     U = None
@@ -294,6 +262,8 @@ class HyperbolicConsLaw:
     boundaryCondFunN = None
     boundaryCondFunS = None
     boundarySource = None
+    timeStepExplicit = None
+    lrState = None
 
     def setFuns(self, maxEigFun, numFluxFunX, numFluxFunY, boundaryCondFunE, boundaryCondFunW, boundaryCondFunN, boundaryCondFunS, order, limiter):
         self.maxEigFun = maxEigFun
@@ -308,6 +278,11 @@ class HyperbolicConsLaw:
         self.order = order
         self.limiter = limiter
 
+        if order==1:
+            self.timeStepExplicit = self.timeStepExplicitOrd1
+        else:
+            self.timeStepExplicit = self.timeStepExplicitOrd2
+
     def setU(self, uinit, nx, ny, xCc, yCc):
         self.nx = nx
         self.ny = ny
@@ -319,6 +294,8 @@ class HyperbolicConsLaw:
         numberConservedQuantities = len(uinit)
 
         self.dim = uinit[0].ndim
+
+        self.lrState = composeLRstate(self.limiter, self.dim, self.order)
         
         self.boundaryCondE = composeBC_E(self.boundaryCondFunE, self.dim, self.order)
         self.boundaryCondW = composeBC_W(self.boundaryCondFunW, self.dim, self.order)
@@ -326,22 +303,22 @@ class HyperbolicConsLaw:
             self.boundaryCondN = composeBC_N(self.boundaryCondFunN, self.dim, self.order)
             self.boundaryCondS = composeBC_S(self.boundaryCondFunS, self.dim, self.order)
 
-        if self.dim == 1:
-            if self.order==1:
-                self.U = [ConsQuantityOrd1Dim1() for i in range(numberConservedQuantities)]
-            else:
-                self.U = [ConsQuantityOrd2Dim1() for i in range(numberConservedQuantities)]
-        if self.dim == 2:
-            if self.order==1:
-                self.U = [ConsQuantityOrd1Dim2() for i in range(numberConservedQuantities)]
-            else:
-                self.U = [ConsQuantityOrd2Dim2() for i in range(numberConservedQuantities)]
+        self.U = [ConsQuantity() for i in range(numberConservedQuantities)]
+        #if self.dim == 1:
+        #    if self.order==1:
+        #        self.U = [ConsQuantityOrd1Dim1() for i in range(numberConservedQuantities)]
+        #    else:
+        #        self.U = [ConsQuantityOrd2Dim1() for i in range(numberConservedQuantities)]
+        #if self.dim == 2:
+        #    if self.order==1:
+        #        self.U = [ConsQuantityOrd1Dim2() for i in range(numberConservedQuantities)]
+        #    else:
+        #        self.U = [ConsQuantityOrd2Dim2() for i in range(numberConservedQuantities)]
 
         for i in range(len(self.U)):
-            self.U[i].initialize(self.limiter, uinit[i])
+            self.U[i].u = uinit[i]
 
-class HyperbolicConsLawOrd1(HyperbolicConsLaw):
-    def timeStepExplicit(self, t, Tmax, CFL = 0.49):
+    def timeStepExplicitOrd1(self, t, Tmax, CFL = 0.49):
         eig = self.maxEigFun(self.U, self.dx, self.dy)
         dt = 1.*CFL/eig
         if t+dt>Tmax:
@@ -356,9 +333,9 @@ class HyperbolicConsLawOrd1(HyperbolicConsLaw):
             self.boundaryCondS(self.U, self.dy, self.xCc)
         ### states at cell interfaces
         for i in range(len(self.U)):
-            self.U[i].uW, self.U[i].uE = self.U[i].LRstate(1)
+            self.U[i].uW, self.U[i].uE = self.lrState(self.U[i].u,1)
             if self.dim==2:
-                self.U[i].uS, self.U[i].uN = self.U[i].LRstate(2)
+                self.U[i].uS, self.U[i].uN = self.lrState(self.U[i].u,2)
         ### Fluxes across cell interfaces X-dir
         FX = self.numFluxFunX(self.U, dt, self.dx) # gives back a list
         if self.dim==2:
@@ -373,8 +350,7 @@ class HyperbolicConsLawOrd1(HyperbolicConsLaw):
 
         return t
 
-class HyperbolicConsLawOrd2(HyperbolicConsLaw):
-    def timeStepExplicit(self, t, Tmax, CFL = 0.49):
+    def timeStepExplicitOrd2(self, t, Tmax, CFL = 0.49):
         #while t<Tinterval[1]:
         eig = self.maxEigFun(self.U, self.dx, self.dy)
         dt = 1.*CFL/eig
@@ -394,9 +370,9 @@ class HyperbolicConsLawOrd2(HyperbolicConsLaw):
                 self.boundaryCondS(self.U, self.dy, self.xCc)
             ### states at cell interfaces
             for i in range(len(self.U)):
-                self.U[i].uW, self.U[i].uE = self.U[i].LRstate(1)
+                self.U[i].uW, self.U[i].uE = self.lrState(self.U[i].u,1)
                 if self.dim==2:
-                    self.U[i].uS, self.U[i].uN = self.U[i].LRstate(2)
+                    self.U[i].uS, self.U[i].uN = self.lrState(self.U[i].u,2)
             ### Fluxes across cell interfaces X-dir
             FX = self.numFluxFunX(self.U, dt, self.dx) # gives back a list
             if self.dim==2:
@@ -406,8 +382,9 @@ class HyperbolicConsLawOrd2(HyperbolicConsLaw):
                 if self.dim==1:
                     self.U[i].u[self.order:-self.order] -= dt/self.dx*(FX[i][1:] - FX[i][0:-1])
                 else:
-                    self.U[i].u[self.order:-self.order,:] -= dt/self.dx*(FX[i][1:] - FX[i][0:-1])
-                    self.U[i].u[:,self.order:-self.order] -= dt/self.dy*(FY[i][1:] - FY[i][0:-1])
+                    self.U[i].u[self.order:-self.order,self.order:-self.order] -= \
+                            dt/self.dx*(FX[i][1:,self.order:-self.order] - FX[i][0:-1,self.order:-self.order]) + \
+                            dt/self.dy*(FY[i][self.order:-self.order,1:] - FY[i][self.order:-self.order,0:-1])
 
         for i in range(len(self.U)):
             self.U[i].u = 0.5*(self.U[i].u + self.U[i].u_tmp)
