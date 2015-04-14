@@ -8,7 +8,7 @@ def maxmod(x,y):
     return 0.5*(np.sign(x)+np.sign(y))*np.maximum(np.abs(x),np.abs(y))
 
 def superbee(x,y):
-    return maxmod(minmod(x,2*y),minmod(2*x,y))
+    return maxmod(minmod(x,2.*y),minmod(2.*x,y))
 
 def mc(x,y,z):
     dif = (((x<0.)&(y<0.)&(z<0.))!=True)&(((x>0.)&(y>0.)&(z>0.))!=True)
@@ -283,6 +283,19 @@ class HyperbolicConsLaw:
         else:
             self.timeStepExplicit = self.timeStepExplicitOrd2
 
+        if numFluxFunY==None:
+            self.dim = 1
+        else:
+            self.dim = 2
+
+        self.lrState = composeLRstate(self.limiter, self.dim, self.order)
+
+        self.boundaryCondE = composeBC_E(self.boundaryCondFunE, self.dim, self.order)
+        self.boundaryCondW = composeBC_W(self.boundaryCondFunW, self.dim, self.order)
+        if self.dim == 2:
+            self.boundaryCondN = composeBC_N(self.boundaryCondFunN, self.dim, self.order)
+            self.boundaryCondS = composeBC_S(self.boundaryCondFunS, self.dim, self.order)
+
     def setU(self, uinit, nx, ny, xCc, yCc):
         self.nx = nx
         self.ny = ny
@@ -293,27 +306,9 @@ class HyperbolicConsLaw:
 
         numberConservedQuantities = len(uinit)
 
-        self.dim = uinit[0].ndim
-
-        self.lrState = composeLRstate(self.limiter, self.dim, self.order)
-        
-        self.boundaryCondE = composeBC_E(self.boundaryCondFunE, self.dim, self.order)
-        self.boundaryCondW = composeBC_W(self.boundaryCondFunW, self.dim, self.order)
-        if self.dim == 2:
-            self.boundaryCondN = composeBC_N(self.boundaryCondFunN, self.dim, self.order)
-            self.boundaryCondS = composeBC_S(self.boundaryCondFunS, self.dim, self.order)
+        assert self.dim == uinit[0].ndim
 
         self.U = [ConsQuantity() for i in range(numberConservedQuantities)]
-        #if self.dim == 1:
-        #    if self.order==1:
-        #        self.U = [ConsQuantityOrd1Dim1() for i in range(numberConservedQuantities)]
-        #    else:
-        #        self.U = [ConsQuantityOrd2Dim1() for i in range(numberConservedQuantities)]
-        #if self.dim == 2:
-        #    if self.order==1:
-        #        self.U = [ConsQuantityOrd1Dim2() for i in range(numberConservedQuantities)]
-        #    else:
-        #        self.U = [ConsQuantityOrd2Dim2() for i in range(numberConservedQuantities)]
 
         for i in range(len(self.U)):
             self.U[i].u = uinit[i]
