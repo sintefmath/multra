@@ -7,12 +7,16 @@ def maxEig(U, dx, dy):
     global a
     return np.max(np.abs(a))/dx
 
+def FluxXLxF(u):
+    global a
+    return a*u
+
 def FluxX(u, m):
     global a
     return a[m]*u[m]
 
 def numFluxX_LxF(U, dt, dx):
-    return [0.5*(FluxX(U[0].uW) + FluxX(U[0].uE)) - 0.5*dx/dt*(U[0].uE - U[0].uW)]
+    return [0.5*(FluxXLxF(U[0].uW) + FluxXLxF(U[0].uE)) - 0.5*dx/dt*(U[0].uE - U[0].uW)]
 
 def numFluxX_upwind(U, dt, dx):
     global a
@@ -75,7 +79,7 @@ def linear(nx=1000, Tmax=1., order=1, limiter='minmod', method='upwind', plotRes
     xCc = np.linspace(0.+dx/2.,1.-dx/2.,nx) # cell centers
     yCc = np.array((0.,0.))
 
-    uinit = np.zeros((nx+2*order))
+    uinit = np.zeros((nx))
     #uinit[order:-order] = np.sin(2*np.pi*xCc)
 
     hcl.setU([uinit], nx, ny, xCc, yCc)
@@ -87,7 +91,7 @@ def linear(nx=1000, Tmax=1., order=1, limiter='minmod', method='upwind', plotRes
 
     t = 0.
     while t<Tmax:
-        t = hcl.timeStepExplicit(t, Tmax, dx)
+        t = hcl.timeStepExplicit(t, Tmax)
 
     if plotResult:
         pl.ion()

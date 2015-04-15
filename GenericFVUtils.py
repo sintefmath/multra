@@ -20,62 +20,62 @@ def mc(x,y,z):
 def composeLRstate(limiter, dim, order):
     if order==1:
         if dim==1:
-            def lrState(u, direction):
+            def lrState(u, direction, order):
                 return u[0:-1], u[1:]
         else:
-            def lrState(u, direction):
+            def lrState(u, direction, order):
                 if direction==1:
-                    return u[0:-1,:], u[1:,:]
+                    return u[0:-1,order:-order], u[1:,order:-order]
                 else:
-                    return u[:,0:-1], u[:,1:]
+                    return u[order:-order,0:-1], u[order:-order,1:]
     else:
         if dim==1:
             if limiter=='minmod':
-                def lrState(u, direction):
+                def lrState(u, direction, order):
                     a = u[1:]-u[0:-1]
                     S = 0.5*(np.sign(a[0:-1])+np.sign(a[1:]))*np.minimum(np.abs(a[0:-1]),np.abs(a[1:])) # limiter
                     return u[1:-2] + 0.5*S[0:-1], u[2:-1] - 0.5*S[1:]
             if limiter=='superbee':
-                def lrState(u, direction):
+                def lrState(u, direction, order):
                     a = u[1:]-u[0:-1]
                     S = superbee(a[0:-1],a[1:]) # limiter
                     return u[1:-2] + 0.5*S[0:-1], u[2:-1] - 0.5*S[1:]
             if limiter=='mc':
-                def lrState(u, direction):
+                def lrState(u, direction, order):
                     a = u[1:]-u[0:-1]
                     S = mc(2.*a[0:-1],.5*(u[2:]-u[:-2]),2.*a[1:]) # limiter
                     return u[1:-2] + 0.5*S[0:-1], u[2:-1] - 0.5*S[1:]
         else:
             if limiter=='minmod':
-                def lrState(u, direction):
+                def lrState(u, direction, order):
                     if direction==1:
-                        a = u[1:,:]-u[0:-1,:]
+                        a = u[1:, order:-order]-u[0:-1, order:-order]
                         S = 0.5*(np.sign(a[0:-1,:])+np.sign(a[1:,:]))*np.minimum(np.abs(a[0:-1,:]),np.abs(a[1:,:])) # limiter
-                        return u[1:-2,:] + 0.5*S[0:-1,:], u[2:-1,:] - 0.5*S[1:,:]
+                        return u[1:-2, order:-order] + 0.5*S[0:-1,:], u[2:-1, order:-order] - 0.5*S[1:,:]
                     else:
-                        a = u[:,1:]-u[:,0:-1]
+                        a = u[order:-order, 1:]-u[order:-order, 0:-1]
                         S = 0.5*(np.sign(a[:,0:-1])+np.sign(a[:,1:]))*np.minimum(np.abs(a[:,0:-1]),np.abs(a[:,1:])) # limiter
-                        return u[:,1:-2] + 0.5*S[:,0:-1], u[:,2:-1] - 0.5*S[:,1:]
+                        return u[order:-order, 1:-2] + 0.5*S[:,0:-1], u[order:-order, 2:-1] - 0.5*S[:,1:]
             if limiter=='superbee':
-                def lrState(u, direction):
+                def lrState(u, direction, order):
                     if direction==1:
-                        a = u[1:,:]-u[0:-1,:]
+                        a = u[1:, order:-order]-u[0:-1, order:-order]
                         S = superbee(a[0:-1,:],a[1:,:]) # limiter
-                        return u[1:-2,:] + 0.5*S[0:-1,:], u[2:-1,:] - 0.5*S[1:,:]
+                        return u[1:-2, order:-order] + 0.5*S[0:-1,:], u[2:-1, order:-order] - 0.5*S[1:,:]
                     else:
-                        a = u[:,1:]-u[:,0:-1]
+                        a = u[order:-order, 1:]-u[order:-order, 0:-1]
                         S = superbee(a[:,0:-1],a[:,1:]) # limiter
-                        return u[:,1:-2] + 0.5*S[:,0:-1], u[:,2:-1] - 0.5*S[:,1:]
+                        return u[order:-order, 1:-2] + 0.5*S[:,0:-1], u[order:-order, 2:-1] - 0.5*S[:,1:]
             if limiter=='mc':
-                def lrState(u, direction):
+                def lrState(u, direction, order):
                     if direction==1:
-                        a = u[1:,:]-u[0:-1,:]
-                        S = mc(2.*a[0:-1,:],.5*(u[2:,:]-u[:-2,:]),2.*a[1:,:]) # limiter
-                        return u[1:-2,:] + 0.5*S[0:-1,:], u[2:-1,:] - 0.5*S[1:,:]
+                        a = u[1:, order:-order]-u[0:-1, order:-order]
+                        S = mc(2.*a[0:-1,:],.5*(u[2:, order:-order]-u[:-2, order:-order]),2.*a[1:,:]) # limiter
+                        return u[1:-2, order:-order] + 0.5*S[0:-1,:], u[2:-1, order:-order] - 0.5*S[1:,:]
                     else:
-                        a = u[:,1:]-u[:,0:-1]
-                        S = mc(2.*a[:,0:-1],.5*(u[:,2:]-u[:,:-2]),2.*a[:,1:]) # limiter
-                        return u[:,1:-2] + 0.5*S[:,0:-1], u[:,2:-1] - 0.5*S[:,1:]
+                        a = u[order:-order, 1:]-u[order:-order, 0:-1]
+                        S = mc(2.*a[:,0:-1],.5*(u[order:-order, 2:]-u[order:-order, :-2]),2.*a[:,1:]) # limiter
+                        return u[order:-order, 1:-2] + 0.5*S[:,0:-1], u[order:-order, 2:-1] - 0.5*S[:,1:]
     return lrState
 
 def composeBC_W(bcfun, dim, order):
@@ -204,23 +204,23 @@ def composeBC_S(bcfun, order):
 def composeBC_N(bcfun, order):
     if bcfun == None:
         if order==1:
-            def boundaryCondN(U, t, dx, y):
+            def boundaryCondN(U, t, dy, x):
                 for i in range(len(U)):
                     U[i].u[:,-1] = U[i].u[:,-2]
         else:
-            def boundaryCondN(U, t, dx, y):
+            def boundaryCondN(U, t, dy, x):
                 for i in range(len(U)):
                     U[i].u[:,-1] = U[i].u[:,-4]
                     U[i].u[:,-2] = U[i].u[:,-3]
     else:
         if order==1:
-            def boundaryCondN(U, t, dx, y):
-                uBC = bcfun(t, dx, y)
+            def boundaryCondN(U, t, dy, x):
+                uBC = bcfun(t, dy, x)
                 for i in range(len(U)):
                     U[i].u[:,-1] = uBC[i]
         else:
-            def boundaryCondN(U, t, dx, y):
-                uBC = bcfun(t, dx, y)
+            def boundaryCondN(U, t, dy, x):
+                uBC = bcfun(t, dy, x)
                 for i in range(len(U)):
                     U[i].u[:,-1] = uBC[i]
                     U[i].u[:,-2] = uBC[i]
@@ -235,6 +235,11 @@ class ConsQuantity:
     uS = None
     uE = None
     uN = None
+    def init(self, nx, ny, order):
+        if ny==None:
+            self.u = np.zeros(nx+2*order)
+        else:
+            self.u = np.zeros((nx+2*order, ny+2*order))
     def savetmp(self):
         self.u_tmp = 1.*self.u
 
@@ -293,8 +298,8 @@ class HyperbolicConsLaw:
         self.boundaryCondE = composeBC_E(self.boundaryCondFunE, self.dim, self.order)
         self.boundaryCondW = composeBC_W(self.boundaryCondFunW, self.dim, self.order)
         if self.dim == 2:
-            self.boundaryCondN = composeBC_N(self.boundaryCondFunN, self.dim, self.order)
-            self.boundaryCondS = composeBC_S(self.boundaryCondFunS, self.dim, self.order)
+            self.boundaryCondN = composeBC_N(self.boundaryCondFunN, self.order)
+            self.boundaryCondS = composeBC_S(self.boundaryCondFunS, self.order)
 
     def setU(self, uinit, nx, ny, xCc, yCc):
         self.nx = nx
@@ -311,7 +316,11 @@ class HyperbolicConsLaw:
         self.U = [ConsQuantity() for i in range(numberConservedQuantities)]
 
         for i in range(len(self.U)):
-            self.U[i].u = uinit[i]
+            self.U[i].init(self.nx, self.ny, self.order)
+            if self.dim==1:
+                self.U[i].u[self.order:-self.order] = uinit[i]
+            else:
+                self.U[i].u[self.order:-self.order,self.order:-self.order] = uinit[i]
 
     def timeStepExplicitOrd1(self, t, Tmax, CFL = 0.49):
         eig = self.maxEigFun(self.U, self.dx, self.dy)
@@ -324,13 +333,13 @@ class HyperbolicConsLaw:
         self.boundaryCondW(self.U, t, self.dx, self.yCc)
         self.boundaryCondE(self.U, t, self.dx, self.yCc)
         if self.dim==2:
-            self.boundaryCondN(self.U, self.dy, self.xCc)
-            self.boundaryCondS(self.U, self.dy, self.xCc)
+            self.boundaryCondN(self.U, t, self.dy, self.xCc)
+            self.boundaryCondS(self.U, t, self.dy, self.xCc)
         ### states at cell interfaces
         for i in range(len(self.U)):
-            self.U[i].uW, self.U[i].uE = self.lrState(self.U[i].u,1)
+            self.U[i].uW, self.U[i].uE = self.lrState(self.U[i].u, 0, self.order)
             if self.dim==2:
-                self.U[i].uS, self.U[i].uN = self.lrState(self.U[i].u,2)
+                self.U[i].uS, self.U[i].uN = self.lrState(self.U[i].u, 1, self.order)
         ### Fluxes across cell interfaces X-dir
         FX = self.numFluxFunX(self.U, dt, self.dx) # gives back a list
         if self.dim==2:
@@ -340,8 +349,9 @@ class HyperbolicConsLaw:
             if self.dim==1:
                 self.U[i].u[self.order:-self.order] -= dt/self.dx*(FX[i][1:] - FX[i][0:-1])
             else:
-                self.U[i].u[self.order:-self.order,:] -= dt/self.dx*(FX[i][1:,:] - FX[i][0:-1,:])
-                self.U[i].u[:,self.order:-self.order] -= dt/self.dy*(FY[i][:,1:] - FY[i][:,0:-1])
+                self.U[i].u[self.order:-self.order,self.order:-self.order] -= \
+                        dt/self.dx*(FX[i][:,1:] - FX[i][:,0:-1]) + \
+                        dt/self.dy*(FY[i][1:,:] - FY[i][0:-1,:])
 
         return t
 
@@ -361,13 +371,13 @@ class HyperbolicConsLaw:
             self.boundaryCondW(self.U, t, self.dx, self.yCc)
             self.boundaryCondE(self.U, t, self.dx, self.yCc)
             if self.dim==2:
-                self.boundaryCondN(self.U, self.dy, self.xCc)
-                self.boundaryCondS(self.U, self.dy, self.xCc)
+                self.boundaryCondN(self.U, t, self.dy, self.xCc)
+                self.boundaryCondS(self.U, t, self.dy, self.xCc)
             ### states at cell interfaces
             for i in range(len(self.U)):
-                self.U[i].uW, self.U[i].uE = self.lrState(self.U[i].u,1)
+                self.U[i].uW, self.U[i].uE = self.lrState(self.U[i].u, 0, self.order)
                 if self.dim==2:
-                    self.U[i].uS, self.U[i].uN = self.lrState(self.U[i].u,2)
+                    self.U[i].uS, self.U[i].uN = self.lrState(self.U[i].u, 1, self.order)
             ### Fluxes across cell interfaces X-dir
             FX = self.numFluxFunX(self.U, dt, self.dx) # gives back a list
             if self.dim==2:
@@ -378,8 +388,8 @@ class HyperbolicConsLaw:
                     self.U[i].u[self.order:-self.order] -= dt/self.dx*(FX[i][1:] - FX[i][0:-1])
                 else:
                     self.U[i].u[self.order:-self.order,self.order:-self.order] -= \
-                            dt/self.dx*(FX[i][1:,self.order:-self.order] - FX[i][0:-1,self.order:-self.order]) + \
-                            dt/self.dy*(FY[i][self.order:-self.order,1:] - FY[i][self.order:-self.order,0:-1])
+                            dt/self.dx*(FX[i][:,1:] - FX[i][:,0:-1]) + \
+                            dt/self.dy*(FY[i][1:,:] - FY[i][0:-1,:])
 
         for i in range(len(self.U)):
             self.U[i].u = 0.5*(self.U[i].u + self.U[i].u_tmp)

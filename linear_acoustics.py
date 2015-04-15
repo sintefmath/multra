@@ -100,8 +100,8 @@ def linear(nx=1000, Tmax=1., order=1, limiter='minmod', method='upwind', plotRes
     xCc = np.linspace(0.+dx/2.,1.-dx/2.,nx) # cell centers
     yCc = np.array((0.,0.))
 
-    u0_init = np.zeros((nx+2*order))
-    u1_init = np.zeros((nx+2*order))
+    u0_init = np.zeros((nx))
+    u1_init = np.zeros((nx))
     #u0_init[order:-order] = np.sin(2*np.pi*xCc)
 
     hcl.setU([u0_init, u1_init], nx, ny, xCc, yCc)
@@ -120,7 +120,7 @@ def linear(nx=1000, Tmax=1., order=1, limiter='minmod', method='upwind', plotRes
 
     t = 0.
     while t<Tmax:
-        t = hcl.timeStepExplicit(t, Tmax, dx)
+        t = hcl.timeStepExplicit(t, Tmax)
 
     if plotResult:
         pl.ion()
