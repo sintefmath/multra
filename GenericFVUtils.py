@@ -255,7 +255,7 @@ class HyperbolicConsLaw:
     yCc = None
     order = None
     limiter = None
-    maxEigFun = None
+    maxAbsEigFun = None
     numFluxFunX = None
     numFluxFunY = None
     boundaryCondE = None
@@ -270,8 +270,8 @@ class HyperbolicConsLaw:
     timeStepExplicit = None
     lrState = None
 
-    def setFuns(self, maxEigFun, numFluxFunX, numFluxFunY, boundaryCondFunE, boundaryCondFunW, boundaryCondFunN, boundaryCondFunS, order, limiter):
-        self.maxEigFun = maxEigFun
+    def setFuns(self, maxAbsEigFun, numFluxFunX, numFluxFunY, boundaryCondFunE, boundaryCondFunW, boundaryCondFunN, boundaryCondFunS, order, limiter):
+        self.maxAbsEigFun = maxAbsEigFun
         self.numFluxFunX = numFluxFunX
         self.numFluxFunY = numFluxFunY
 
@@ -307,7 +307,8 @@ class HyperbolicConsLaw:
         self.xCc = xCc
         self.yCc = yCc
         self.dx = xCc[1]-xCc[0]
-        self.dy = yCc[1]-yCc[0]
+        if self.dim==2:
+            self.dy = yCc[1]-yCc[0]
 
         numberConservedQuantities = len(uinit)
 
@@ -323,7 +324,7 @@ class HyperbolicConsLaw:
                 self.U[i].u[self.order:-self.order,self.order:-self.order] = uinit[i]
 
     def timeStepExplicitOrd1(self, t, Tmax, CFL = 0.49):
-        eig = self.maxEigFun(self.U, self.dx, self.dy)
+        eig = self.maxAbsEigFun(self.U, self.dx, self.dy)
         dt = 1.*CFL/eig
         if t+dt>Tmax:
             dt=Tmax-t
@@ -356,8 +357,7 @@ class HyperbolicConsLaw:
         return t
 
     def timeStepExplicitOrd2(self, t, Tmax, CFL = 0.49):
-        #while t<Tinterval[1]:
-        eig = self.maxEigFun(self.U, self.dx, self.dy)
+        eig = self.maxAbsEigFun(self.U, self.dx, self.dy)
         dt = 1.*CFL/eig
         if t+dt>Tmax:
             dt=Tmax-t
