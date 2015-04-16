@@ -58,53 +58,42 @@ def numFluxX_upwind(U, dt, dx):
 def boundaryCondFunE(t, dx, y):
     return [0., 0.]
 def boundaryCondFunW(t, dx, y):
+# square pulse
     u = 0.
-    x0 = 0.4
-    if (t<x0):
+    if (t<0.4):
         u = 0.25
     return [0., u]
 
-def linearProfiling(nx=1000, Tmax=1., order=1, limiter='minmod', method='upwind'):
-    from pycallgraph import PyCallGraph
-    from pycallgraph.output import GraphvizOutput
-    graphviz = GraphvizOutput()
-    graphviz.output_file = 'basic.png'
-    with PyCallGraph(output=graphviz):
-        print("Starting simulation...")
-        linear(nx, Tmax, order, limiter, method, False)
-        print("... done.")
+def linear(nx=1000, Tmax=1., order=1, limiter='minmod', method='upwind'):
 
-
-def linear(nx=1000, Tmax=1., order=1, limiter='minmod', method='upwind', plotResult = True):
-
+# generate instance of class
     hcl = HyperbolicConsLaw()
 
     if method=='LxF':
         numFluxX = numFluxX_LxF
     else:
         numFluxX = numFluxX_upwind
-
-    xCi = np.linspace(0,1,nx+1) # cell interfaces
-    dx = xCi[1]-xCi[0]
-
-    ny = None
-    dy = None
     numFluxY = None
+
     boundaryCondFunN = None
     boundaryCondFunS = None
-    #boundaryCondFunW = None
-    #boundaryCondFunE = None
 
+# set functions for max absolute eigenvalue, fluxes, boundaryconditions, order, and limiter
     hcl.setFuns(maxEig, numFluxX, numFluxY, boundaryCondFunE, boundaryCondFunW, boundaryCondFunN, boundaryCondFunS, order, limiter)
 
-    xCc = np.linspace(0.+dx/2.,1.-dx/2.,nx) # cell centers
-    yCc = np.array((0.,0.))
+    xCc = np.linspace(0.+.5/nx,1.-.5/nx,nx) # cell centers
+    yCc = None
+
+    ny = None
 
     u0_init = np.zeros((nx))
     u1_init = np.zeros((nx))
     #u0_init[order:-order] = np.sin(2*np.pi*xCc)
 
+# set initial state
     hcl.setU([u0_init, u1_init], nx, ny, xCc, yCc)
+
+    xCi = np.linspace(0,1,nx+1) # cell interfaces
 
     global rho0
     global K0
@@ -116,16 +105,15 @@ def linear(nx=1000, Tmax=1., order=1, limiter='minmod', method='upwind', plotRes
     #V = -xCi + .5
     V = -xCi*0.
 
-    #pl.plot(xCc,hcl.U[0].u[order:-order])
-
     t = 0.
     while t<Tmax:
+# apply explicit time stepping
         t = hcl.timeStepExplicit(t, Tmax)
 
-    if plotResult:
-        pl.ion()
-        pl.plot(xCc,hcl.U[0].u[order:-order])
-        pl.plot(xCi,V,'k:')
+#plot result
+    pl.ion()
+    pl.plot(xCc,hcl.U[0].u[order:-order])
+    pl.plot(xCi,V,'k:')
 
     return xCi, hcl.U
 

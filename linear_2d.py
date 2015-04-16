@@ -4,7 +4,7 @@ from GenericFVUtils import *
 a = None
 b = None
 
-def maxEig(U, dx, dy):
+def maxAbsEig(U, dx, dy):
     global a
     global b
     return max(np.max(np.abs(a))/dx,np.max(np.abs(b))/dy)
@@ -36,55 +36,35 @@ def numFluxY_upwind(U, dt, dx):
 def boundaryCondFunE(t, dx, y):
     return [0.]
 def boundaryCondFunW(t, dx, y):
+# square pulse
     u = 0.
-    x0 = 0.4
-    if (t<x0):
+    if (t<0.4):
         u = 0.25
     return [u]
 
-def linearProfiling(nx=1000, Tmax=1., order=1, limiter='minmod', method='upwind'):
-    from pycallgraph import PyCallGraph
-    from pycallgraph.output import GraphvizOutput
-    graphviz = GraphvizOutput()
-    graphviz.output_file = 'basic.png'
-    with PyCallGraph(output=graphviz):
-        print("Starting simulation...")
-        linear(nx, Tmax, order, limiter, method, False)
-        print("... done.")
+def linear(nx=100, ny=100 ,Tmax=1., order=1, limiter='minmod'):
 
-
-def linear(nx=100, ny=100 ,Tmax=1., order=1, limiter='minmod', plotResult = True):
-
+# generate instance of class
     hcl = HyperbolicConsLaw()
-
-    xCi = np.linspace(0,1,nx+1) # cell interfaces
-    dx = xCi[1]-xCi[0]
-
-    yCi = np.linspace(0,1,ny+1) # cell interfaces
-    dy = yCi[1]-yCi[0]
 
     boundaryCondFunN = None
     boundaryCondFunS = None
     boundaryCondFunW = None
     boundaryCondFunE = None
 
-    hcl.setFuns(maxEig, numFluxX_upwind, numFluxY_upwind, boundaryCondFunE, boundaryCondFunW, boundaryCondFunN, boundaryCondFunS, order, limiter)
+# set functions for max absolute eigenvalue, fluxes, boundaryconditions, order, and limiter
+    hcl.setFuns(maxAbsEig, numFluxX_upwind, numFluxY_upwind, boundaryCondFunE, boundaryCondFunW, boundaryCondFunN, boundaryCondFunS, order, limiter)
 
-    xCc = np.linspace(0.+dx/2.,1.-dx/2.,nx) # cell centers
-    yCc = np.linspace(0.+dy/2.,1.-dy/2.,ny) # cell centers
+    xCc = np.linspace(0.+.5/nx,1.-.5/nx,nx) # cell centers
+    yCc = np.linspace(0.+.5/ny,1.-.5/ny,ny) # cell centers
 
     xv, yv = np.meshgrid(xCc, yCc)
 
     uinit = np.zeros((ny, nx))
-    #uinit[np.nonzero((xv<.75) & (xv>.25))] = 1.
-    #uinit[np.nonzero((yv<.75) & (yv>.25))] = 1.
     uinit[np.sqrt((xv-.5)**2 + (yv-.5)**2)<.25] = 1.
 
+# set initial state
     hcl.setU([uinit], ny, nx, xCc, yCc)
-
-    #pl.ion()
-    #pl.imshow(hcl.U[0].u[order:-order,order:-order])
-    #return
 
     global a
     a = .5*np.ones((ny,nx+1))
@@ -93,12 +73,15 @@ def linear(nx=100, ny=100 ,Tmax=1., order=1, limiter='minmod', plotResult = True
 
     t = 0.
     while t<Tmax:
+# apply explicit time stepping
         t = hcl.timeStepExplicit(t, Tmax)
 
-    if plotResult:
-        pl.ion()
-        #pl.imshow(xCi, yCi, hcl.U[0].u[order:-order,order:-order], interpolation='nearest', cmap=pl.gray(), origin='lower')
-        pl.pcolor(xv, yv, hcl.U[0].u[order:-order,order:-order], cmap=pl.gray())
+#plot result
+    pl.ion()
+    pl.pcolor(xv, yv, hcl.U[0].u[order:-order,order:-order], cmap=pl.gray())
+
+    xCi = np.linspace(0,1,nx+1) # cell interfaces
+    yCi = np.linspace(0,1,ny+1) # cell interfaces
 
     return xCi, yCi, hcl.U
 

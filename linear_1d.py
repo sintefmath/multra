@@ -23,9 +23,9 @@ def boundaryCondFunE(t, dx, y):
     return [0.]
 
 def boundaryCondFunW(t, dx, y):
+# square pulse
     u = 0.
-    x0 = 0.4
-    if (t<x0):
+    if (t<0.4):
         u = 0.25
     return [u]
 
@@ -44,9 +44,9 @@ def linear(nx=1000, Tmax=1., order=1, limiter='minmod'):
     hcl.setFuns(maxAbsEig, numFluxX, numFluxY, boundaryCondFunE, boundaryCondFunW, boundaryCondFunN, boundaryCondFunS, order, limiter)
 
     xCc = np.linspace(0.+.5/nx,1.-.5/nx,nx) # cell centers
+    yCc = None
 
     ny = None
-    yCc = None
 
     uinit = np.zeros((nx))
     #uinit[order:-order] = np.sin(2*np.pi*xCc)
