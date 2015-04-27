@@ -343,13 +343,12 @@ class HyperbolicConsLaw:
                 self.U[i].uS, self.U[i].uN = self.lrState(self.U[i].u, 1, self.order)
         ### Fluxes across cell interfaces X-dir
         FX = self.numFluxFunX(self.U, dt, self.dx) # gives back a list
-        if self.dim==2:
-            FY = self.numFluxFunY(self.U, dt, self.dy) # gives back a list
-        ### advance FV scheme
-        for i in range(len(self.U)):
-            if self.dim==1:
+        if self.dim==1:
+            for i in range(len(self.U)):
                 self.U[i].u[self.order:-self.order] -= dt/self.dx*(FX[i][1:] - FX[i][0:-1])
-            else:
+        else:
+            FY = self.numFluxFunY(self.U, dt, self.dy) # gives back a list
+            for i in range(len(self.U)):
                 self.U[i].u[self.order:-self.order,self.order:-self.order] -= \
                         dt/self.dx*(FX[i][:,1:] - FX[i][:,0:-1]) + \
                         dt/self.dy*(FY[i][1:,:] - FY[i][0:-1,:])
@@ -380,13 +379,13 @@ class HyperbolicConsLaw:
                     self.U[i].uS, self.U[i].uN = self.lrState(self.U[i].u, 1, self.order)
             ### Fluxes across cell interfaces X-dir
             FX = self.numFluxFunX(self.U, dt, self.dx) # gives back a list
-            if self.dim==2:
-                FY = self.numFluxFunY(self.U, dt, self.dy) # gives back a list
             ### advance FV scheme
-            for i in range(len(self.U)):
-                if self.dim==1:
+            if self.dim==1:
+                for i in range(len(self.U)):
                     self.U[i].u[self.order:-self.order] -= dt/self.dx*(FX[i][1:] - FX[i][0:-1])
-                else:
+            else:
+                FY = self.numFluxFunY(self.U, dt, self.dy) # gives back a list
+                for i in range(len(self.U)):
                     self.U[i].u[self.order:-self.order,self.order:-self.order] -= \
                             dt/self.dx*(FX[i][:,1:] - FX[i][:,0:-1]) + \
                             dt/self.dy*(FY[i][1:,:] - FY[i][0:-1,:])
