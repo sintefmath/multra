@@ -235,7 +235,7 @@ class ConsQuantity:
     uS = None
     uE = None
     uN = None
-    def init(self, nx, ny, order):
+    def __init__(self, nx, ny, order):
         if ny==None:
             self.u = np.zeros(nx+2*order)
         else:
@@ -255,53 +255,64 @@ class HyperbolicConsLaw:
     yCc = None
     order = None
     limiter = None
-    maxAbsEigFun = None
-    numFluxFunX = None
-    numFluxFunY = None
     boundaryCondE = None
     boundaryCondW = None
     boundaryCondN = None
     boundaryCondS = None
-    boundaryCondFunE = None
-    boundaryCondFunW = None
-    boundaryCondFunN = None
-    boundaryCondFunS = None
     boundarySource = None
     timeStepExplicit = None
     lrState = None
+    fluxesSet = False
+    boundaryCondSet = False
 
-    def setFuns(self, maxAbsEigFun, numFluxFunX, numFluxFunY, boundaryCondFunE, boundaryCondFunW, boundaryCondFunN, boundaryCondFunS, order, limiter):
-        self.maxAbsEigFun = maxAbsEigFun
-        self.numFluxFunX = numFluxFunX
-        self.numFluxFunY = numFluxFunY
-
-        self.boundaryCondFunE = boundaryCondFunE
-        self.boundaryCondFunW = boundaryCondFunW
-        self.boundaryCondFunN = boundaryCondFunN
-        self.boundaryCondFunS = boundaryCondFunS
-
+    def __init__(self, order, limiter):
         self.order = order
         self.limiter = limiter
-
         if order==1:
             self.timeStepExplicit = self.timeStepExplicitOrd1
         else:
             self.timeStepExplicit = self.timeStepExplicitOrd2
+
+    def setNumericalFluxFuns(self, numFluxFunX, numFluxFunY, maxAbsEigFun):
+
+### Checking if functions are called in the right order
+        self.fluxesSet = True
+###
+        HyperbolicConsLaw.numFluxFunX = numFluxFunX
+        HyperbolicConsLaw.numFluxFunY = numFluxFunY
+        HyperbolicConsLaw.maxAbsEigFun = maxAbsEigFun
 
         if numFluxFunY==None:
             self.dim = 1
         else:
             self.dim = 2
 
+    def setFluxParams(self, **kwargs):
+        if kwargs is not None:
+            for key, value in kwargs.items():
+                setattr(self, key, value)
+
+    def setBoundaryCond(self, boundaryCondFunE = None, boundaryCondFunW = None, boundaryCondFunN = None, boundaryCondFunS = None):
+
+### Checking if functions are called in the right order
+        assert self.fluxesSet == True, "set numerical flux functions before setting boundary conditions"
+        self.boundaryCondSet = True
+###
+
         self.lrState = composeLRstate(self.limiter, self.dim, self.order)
 
-        self.boundaryCondE = composeBC_E(self.boundaryCondFunE, self.dim, self.order)
-        self.boundaryCondW = composeBC_W(self.boundaryCondFunW, self.dim, self.order)
+        self.boundaryCondE = composeBC_E(boundaryCondFunE, self.dim, self.order)
+        self.boundaryCondW = composeBC_W(boundaryCondFunW, self.dim, self.order)
         if self.dim == 2:
-            self.boundaryCondN = composeBC_N(self.boundaryCondFunN, self.order)
-            self.boundaryCondS = composeBC_S(self.boundaryCondFunS, self.order)
+            self.boundaryCondN = composeBC_N(boundaryCondFunN, self.order)
+            self.boundaryCondS = composeBC_S(boundaryCondFunS, self.order)
 
     def setU(self, uinit, nx, ny, xCc, yCc):
+
+### Checking if functions are called in the right order
+        assert self.fluxesSet == True, "set numerical flux functions before setting U"
+        assert self.boundaryCondSet == True, "set boundary conditions before initializing U"
+###
         self.nx = nx
         self.ny = ny
         self.xCc = xCc
@@ -312,12 +323,11 @@ class HyperbolicConsLaw:
 
         numberConservedQuantities = len(uinit)
 
-        assert self.dim == uinit[0].ndim
+        assert self.dim == uinit[0].ndim, "dimensions of flux functions and initial conditions are not equal"
 
-        self.U = [ConsQuantity() for i in range(numberConservedQuantities)]
+        self.U = [ConsQuantity(self.nx, self.ny, self.order) for i in range(numberConservedQuantities)]
 
         for i in range(len(self.U)):
-            self.U[i].init(self.nx, self.ny, self.order)
             if self.dim==1:
                 self.U[i].u[self.order:-self.order] = uinit[i]
             else:

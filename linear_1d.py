@@ -1,22 +1,17 @@
 import pylab as pl
 from GenericFVUtils import *
 
-a = None
+def maxAbsEig(self, U, dx, dy):
+    return np.max(np.abs(self.a))/dx
 
-def maxAbsEig(U, dx, dy):
-    global a
-    return np.max(np.abs(a))/dx
+def FluxX(self, u, m):
+    return self.a[m]*u[m]
 
-def FluxX(u, m):
-    global a
-    return a[m]*u[m]
-
-def numFluxX_upwind(U, dt, dx):
-    global a
-    mask = a < 0.
+def numFluxX_upwind(self, U, dt, dx):
+    mask = self.a < 0.
     Fu = np.empty_like(U[0].uW)
-    Fu[-mask] = FluxX(U[0].uW,-mask)
-    Fu[mask] = FluxX(U[0].uE,mask)
+    Fu[-mask] = self.a[-mask]*U[0].uW[-mask]
+    Fu[ mask] = self.a[ mask]*U[0].uE[ mask]
     return [Fu]
 
 def boundaryCondFunE(t, dx, y):
@@ -32,41 +27,39 @@ def boundaryCondFunW(t, dx, y):
 def linear(nx=1000, Tmax=1., order=1, limiter='minmod'):
 
 # generate instance of class
-    hcl = HyperbolicConsLaw()
+    hcl = HyperbolicConsLaw(order, limiter)
 
+#set numerical Flux
     numFluxX = numFluxX_upwind
     numFluxY = None
+    hcl.setNumericalFluxFuns(numFluxX, numFluxY, maxAbsEig)
 
+# set boundary conditions
     boundaryCondFunN = None
     boundaryCondFunS = None
-
-# set functions for max absolute eigenvalue, fluxes, boundaryconditions, order, and limiter
-    hcl.setFuns(maxAbsEig, numFluxX, numFluxY, boundaryCondFunE, boundaryCondFunW, boundaryCondFunN, boundaryCondFunS, order, limiter)
-
-    xCc = np.linspace(0.+.5/nx,1.-.5/nx,nx) # cell centers
-    yCc = None
-
-    ny = None
-
-    uinit = np.zeros((nx))
-    #uinit[order:-order] = np.sin(2*np.pi*xCc)
+    hcl.setBoundaryCond(boundaryCondFunE, boundaryCondFunW, boundaryCondFunN, boundaryCondFunS)
 
 # set initial state
+    xCc = np.linspace(0.+.5/nx,1.-.5/nx,nx) # cell centers
+    yCc = None
+    ny = None
+    uinit = np.zeros((nx))
+    #uinit[order:-order] = np.sin(2*np.pi*xCc)
     hcl.setU([uinit], nx, ny, xCc, yCc)
 
-#
+# set flux parameters
     xCi = np.linspace(0,1,nx+1) # cell interfaces
-    global a
-    a = -xCi + .5
+    a_ = -xCi + .5
+    hcl.setFluxParams(a = a_)
 
+# apply explicit time stepping
     t = 0.
     while t<Tmax:
-# apply explicit time stepping
         t = hcl.timeStepExplicit(t, Tmax)
 
 #plot result
     pl.ion()
     pl.plot(xCc,hcl.U[0].u[order:-order])
-    pl.plot(xCi,a,'k:')
+    pl.plot(xCi,a_,'k:')
 
     return xCi, hcl.U
