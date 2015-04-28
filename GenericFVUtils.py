@@ -1,6 +1,8 @@
 import numpy as np
 from copy import copy as cp
 
+import types
+
 def minmod(a,b):
     return 0.5*(np.sign(a)+np.sign(b))*np.minimum(np.abs(a),np.abs(b))
 
@@ -281,9 +283,11 @@ class HyperbolicConsLaw:
 ### Checking if functions are called in the right order
         self.fluxesSet = True
 ###
-        HyperbolicConsLaw.numFluxFunX = numFluxFunX
-        HyperbolicConsLaw.numFluxFunY = numFluxFunY
-        HyperbolicConsLaw.maxAbsEigFun = maxAbsEigFun
+        # add methods to THIS(=self) instance of the class
+        self.numFluxFunX = types.MethodType(numFluxFunX, self) 
+        if not(numFluxFunY == None):
+            self.numFluxFunY = types.MethodType(numFluxFunY, self)
+        self.maxAbsEigFun = types.MethodType(maxAbsEigFun, self)
 
         if numFluxFunY==None:
             self.dim = 1
@@ -304,11 +308,12 @@ class HyperbolicConsLaw:
 
         self.lrState = composeLRstate(self.limiter, self.dim, self.order)
 
-        HyperbolicConsLaw.boundaryCondE = composeBC_E(boundaryCondFunE, self.dim, self.order)
-        HyperbolicConsLaw.boundaryCondW = composeBC_W(boundaryCondFunW, self.dim, self.order)
+        # add methods to THIS(=self) instance of the class
+        self.boundaryCondE = types.MethodType( composeBC_E(boundaryCondFunE, self.dim, self.order), self )
+        self.boundaryCondW = types.MethodType( composeBC_W(boundaryCondFunW, self.dim, self.order), self )
         if self.dim == 2:
-            HyperbolicConsLaw.boundaryCondN = composeBC_N(boundaryCondFunN, self.order)
-            HyperbolicConsLaw.boundaryCondS = composeBC_S(boundaryCondFunS, self.order)
+            self.boundaryCondN = types.MethodType( composeBC_N(boundaryCondFunN, self.order), self )
+            self.boundaryCondS = types.MethodType( composeBC_S(boundaryCondFunS, self.order), self )
 
     def setU(self, uinit, nx, ny, xCc, yCc):
 
