@@ -62,10 +62,7 @@ def linear(nx=100, ny=100 ,Tmax=1., order=1, limiter='minmod'):
 
 #plot result
     pl.ion()
-    pl.pcolor(xv, yv, hcl.U[0].u[order:-order,order:-order], cmap=pl.gray())
+    pl.pcolor(xv, yv, hcl.getU(0), cmap=pl.gray())
 
-    xCi = np.linspace(0,1,nx+1) # cell interfaces
-    yCi = np.linspace(0,1,ny+1) # cell interfaces
-
-    return xCi, yCi, hcl.U
+    return hcl
 

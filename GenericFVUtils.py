@@ -23,9 +23,11 @@ def composeLRstate(limiter, dim, order):
     if order==1:
         if dim==1:
             def lrState(u, direction, order):
+                """ lr state order 1, dim 1 """
                 return u[0:-1], u[1:]
         else:
             def lrState(u, direction, order):
+                """ lr state order 1, dim 2 """
                 if direction==1:
                     return u[0:-1,order:-order], u[1:,order:-order]
                 else:
@@ -34,22 +36,26 @@ def composeLRstate(limiter, dim, order):
         if dim==1:
             if limiter=='minmod':
                 def lrState(u, direction, order):
+                    """ lr state order 2, limiter = minmod, dim 1 """
                     a = u[1:]-u[0:-1]
                     S = 0.5*(np.sign(a[0:-1])+np.sign(a[1:]))*np.minimum(np.abs(a[0:-1]),np.abs(a[1:])) # limiter
                     return u[1:-2] + 0.5*S[0:-1], u[2:-1] - 0.5*S[1:]
             if limiter=='superbee':
                 def lrState(u, direction, order):
+                    """ lr state order 2, limiter = superbee, dim 1 """
                     a = u[1:]-u[0:-1]
                     S = superbee(a[0:-1],a[1:]) # limiter
                     return u[1:-2] + 0.5*S[0:-1], u[2:-1] - 0.5*S[1:]
             if limiter=='mc':
                 def lrState(u, direction, order):
+                    """ lr state order 2, limiter = mc, dim 1 """
                     a = u[1:]-u[0:-1]
                     S = mc(2.*a[0:-1],.5*(u[2:]-u[:-2]),2.*a[1:]) # limiter
                     return u[1:-2] + 0.5*S[0:-1], u[2:-1] - 0.5*S[1:]
         else:
             if limiter=='minmod':
                 def lrState(u, direction, order):
+                    """ lr state order 2, limiter = mc, dim 2 """
                     if direction==1:
                         a = u[1:, order:-order]-u[0:-1, order:-order]
                         S = 0.5*(np.sign(a[0:-1,:])+np.sign(a[1:,:]))*np.minimum(np.abs(a[0:-1,:]),np.abs(a[1:,:])) # limiter
@@ -60,6 +66,7 @@ def composeLRstate(limiter, dim, order):
                         return u[order:-order, 1:-2] + 0.5*S[:,0:-1], u[order:-order, 2:-1] - 0.5*S[:,1:]
             if limiter=='superbee':
                 def lrState(u, direction, order):
+                    """ lr state order 2, limiter = mc, dim 2 """
                     if direction==1:
                         a = u[1:, order:-order]-u[0:-1, order:-order]
                         S = superbee(a[0:-1,:],a[1:,:]) # limiter
@@ -70,6 +77,7 @@ def composeLRstate(limiter, dim, order):
                         return u[order:-order, 1:-2] + 0.5*S[:,0:-1], u[order:-order, 2:-1] - 0.5*S[:,1:]
             if limiter=='mc':
                 def lrState(u, direction, order):
+                    """ lr state order 2, limiter = mc, dim 2 """
                     if direction==1:
                         a = u[1:, order:-order]-u[0:-1, order:-order]
                         S = mc(2.*a[0:-1,:],.5*(u[2:, order:-order]-u[:-2, order:-order]),2.*a[1:,:]) # limiter
@@ -248,6 +256,7 @@ class ConsQuantity:
 
 class HyperbolicConsLaw:
     U = None
+    Uinit = None
     dim = None
     nx = None
     ny = None
@@ -334,12 +343,27 @@ class HyperbolicConsLaw:
         assert self.dim == uinit[0].ndim, "dimensions of flux functions and initial conditions are not equal"
 
         self.U = [ConsQuantity(self.nx, self.ny, self.order) for i in range(self.numberConservedQuantities)]
+        self.Uinit = [ConsQuantity(self.nx, self.ny, self.order) for i in range(self.numberConservedQuantities)]
 
         for i in range(self.numberConservedQuantities):
             if self.dim==1:
                 self.U[i].u[self.order:-self.order] = uinit[i]
+                self.Uinit[i].u[self.order:-self.order] = uinit[i]
             else:
                 self.U[i].u[self.order:-self.order,self.order:-self.order] = uinit[i]
+                self.Uinit[i].u[self.order:-self.order,self.order:-self.order] = uinit[i]
+
+    def getU(self, i):
+        if self.dim==1:
+            return self.U[i].u[self.order:-self.order]
+        else:
+            return self.U[i].u[self.order:-self.order,self.order:-self.order]
+
+    def getUinit(self, i):
+        if self.dim==1:
+            return self.Uinit[i].u[self.order:-self.order]
+        else:
+            return self.Uinit[i].u[self.order:-self.order,self.order:-self.order]
 
     def timeStepExplicitOrd1(self, t, Tmax, CFL = 0.49):
         eig = self.maxAbsEigFun(self.U, self.dx, self.dy)

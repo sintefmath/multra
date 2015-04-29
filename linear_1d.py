@@ -59,7 +59,7 @@ def linear(nx=1000, Tmax=1., order=1, limiter='minmod'):
 
 #plot result
     pl.ion()
-    pl.plot(xCc,hcl.U[0].u[order:-order])
+    pl.plot(hcl.xCc,hcl.getU(0))
     pl.plot(xCi,a_,'k:')
 
-    return xCi, hcl.U
+    return hcl

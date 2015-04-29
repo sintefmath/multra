@@ -91,8 +91,8 @@ def linear(nx=1000, Tmax=1., order=1, limiter='minmod', method='upwind'):
 
 #plot result
     pl.ion()
-    pl.plot(xCc,hcl.U[0].u[order:-order])
+    pl.plot(hcl.xCc,hcl.getU(0))
     pl.plot(xCi,V_,'k:')
 
-    return xCi, hcl.U
+    return hcl
 
