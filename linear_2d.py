@@ -2,20 +2,20 @@ import pylab as pl
 from GenericFVUtils import *
 
 def maxAbsEig(self, U, dx, dy):
-    return max(np.max(np.abs(self.a))/dx,np.max(np.abs(self.b))/dy)
+    return max(np.max(np.abs(self.params.a))/dx,np.max(np.abs(self.params.b))/dy)
 
 def numFluxX_upwind(self, U, dt, dx):
-    mask = self.a < 0.
+    mask = self.params.a < 0.
     Fu = np.empty_like(U[0].uW)
-    Fu[-mask] = self.a[-mask]*U[0].uW[-mask]
-    Fu[ mask] = self.a[ mask]*U[0].uE[ mask]
+    Fu[-mask] = self.params.a[-mask]*U[0].uW[-mask]
+    Fu[ mask] = self.params.a[ mask]*U[0].uE[ mask]
     return [Fu]
 
 def numFluxY_upwind(self, U, dt, dx):
-    mask = self.b < 0.
+    mask = self.params.b < 0.
     Fu = np.empty_like(U[0].uS)
-    Fu[-mask] = self.b[-mask]*U[0].uS[-mask]
-    Fu[ mask] = self.b[ mask]*U[0].uN[ mask]
+    Fu[-mask] = self.params.b[-mask]*U[0].uS[-mask]
+    Fu[ mask] = self.params.b[ mask]*U[0].uN[ mask]
     return [Fu]
 
 def boundaryCondFunE(t, dx, y):
@@ -61,6 +61,8 @@ def linear(nx=100, ny=100 ,Tmax=1., order=1, limiter='minmod'):
         t = hcl.timeStepExplicit(t, Tmax)
 
 #plot result
+    pl.figure(3)
+    pl.title('linear 2d')
     pl.ion()
     pl.pcolor(xv, yv, hcl.getU(0), cmap=pl.gray())
 

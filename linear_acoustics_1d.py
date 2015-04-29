@@ -2,30 +2,30 @@ import pylab as pl
 from GenericFVUtils import *
 
 def maxAbsEig(self, U, dx, dy):
-    return np.max(np.abs(np.max(self.V) - self.c0), np.abs(np.min(self.V) + self.c0))/dx
+    return np.max(np.abs(np.max(self.params.V) - self.params.c0), np.abs(np.min(self.params.V) + self.params.c0))/dx
 
 #def FluxX(u):
 #    return [V*u[0] + K0*u[1], 1./rho0*u[0] + V*u[1]]
 
 def numFluxX_LxF(self, U, dt, dx):
-    F0 = 0.5*( (      self.V*U[0].uW + self.K0*U[1].uW) + (      self.V*U[0].uE + self.K0*U[1].uE) ) - 0.5*dx/dt*(U[0].uE - U[0].uW)
-    F1 = 0.5*( (1./self.rho0*U[0].uW +  self.V*U[1].uW) + (1./self.rho0*U[0].uE +  self.V*U[1].uE) ) - 0.5*dx/dt*(U[1].uE - U[1].uW)
+    F0 = 0.5*( (      self.params.V*U[0].uW + self.params.K0*U[1].uW) + (      self.params.V*U[0].uE + self.params.K0*U[1].uE) ) - 0.5*dx/dt*(U[0].uE - U[0].uW)
+    F1 = 0.5*( (1./self.params.rho0*U[0].uW +  self.params.V*U[1].uW) + (1./self.params.rho0*U[0].uE +  self.params.V*U[1].uE) ) - 0.5*dx/dt*(U[1].uE - U[1].uW)
     return [F0, F1]
 
 def numFluxX_upwind(self, U, dt, dx):
 
-    sL = self.V - self.c0
-    sR = self.V + self.c0
+    sL = self.params.V - self.params.c0
+    sR = self.params.V + self.params.c0
 
     mask_plus = sL > 0
     mask_minus = sR < 0
     mask_middle = -mask_plus & -mask_minus
 
-    F0W  = self.V*U[0].uW + self.K0*U[1].uW
-    F1W = 1./self.rho0*U[0].uW + self.V*U[1].uW
+    F0W  = self.params.V*U[0].uW + self.params.K0*U[1].uW
+    F1W = 1./self.params.rho0*U[0].uW + self.params.V*U[1].uW
 
-    F0E = self.V*U[0].uE + self.K0*U[1].uE
-    F1E = 1./self.rho0*U[0].uE + self.V*U[1].uE
+    F0E = self.params.V*U[0].uE + self.params.K0*U[1].uE
+    F1E = 1./self.params.rho0*U[0].uE + self.params.V*U[1].uE
 
     F0 = np.empty_like(U[0].uW)
     F1 = np.empty_like(U[1].uW)
@@ -33,8 +33,8 @@ def numFluxX_upwind(self, U, dt, dx):
     [F0[mask_plus], F1[mask_plus]] = [F0W[mask_plus], F1W[mask_plus]]
     [F0[mask_minus], F1[mask_minus]] = [F0W[mask_minus], F1W[mask_minus]]
     [F0[mask_middle], F1[mask_middle]] = [
-        (sR*F0W[mask_middle] - sL*F0E[mask_middle] + sL*sR*(U[0].uE[mask_middle] - U[0].uW[mask_middle]) )/(2.*self.c0),
-        (sR*F1W[mask_middle] - sL*F1E[mask_middle] + sL*sR*(U[1].uE[mask_middle] - U[1].uW[mask_middle]) )/(2.*self.c0)]
+        (sR*F0W[mask_middle] - sL*F0E[mask_middle] + sL*sR*(U[0].uE[mask_middle] - U[0].uW[mask_middle]) )/(2.*self.params.c0),
+        (sR*F1W[mask_middle] - sL*F1E[mask_middle] + sL*sR*(U[1].uE[mask_middle] - U[1].uW[mask_middle]) )/(2.*self.params.c0)]
 
     return [F0, F1]
 
@@ -90,6 +90,8 @@ def linear(nx=1000, Tmax=1., order=1, limiter='minmod', method='upwind'):
         t = hcl.timeStepExplicit(t, Tmax)
 
 #plot result
+    pl.figure(2)
+    pl.title('linear acoustics 1d')
     pl.ion()
     pl.plot(hcl.xCc,hcl.getU(0))
     pl.plot(xCi,V_,'k:')

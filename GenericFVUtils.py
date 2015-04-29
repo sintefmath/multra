@@ -253,6 +253,12 @@ class ConsQuantity:
     def savetmp(self):
         self.u_tmp = 1.*self.u
 
+class FluxParams:
+    def setParams(self, **kwargs):
+        if kwargs is not None:
+            for key, value in kwargs.items():
+                setattr(self, key, value)
+
 
 class HyperbolicConsLaw:
     U = None
@@ -273,10 +279,14 @@ class HyperbolicConsLaw:
     boundaryCondW = None
     boundaryCondN = None
     boundaryCondS = None
+
+    params = None
+
     timeStepExplicit = None
     lrState = None
     fluxesSet = False
     boundaryCondSet = False
+    initUSet = False
     numberConservedQuantities = None
 
     def __init__(self, order, limiter):
@@ -286,6 +296,7 @@ class HyperbolicConsLaw:
             self.timeStepExplicit = self.timeStepExplicitOrd1
         else:
             self.timeStepExplicit = self.timeStepExplicitOrd2
+        self.params = FluxParams()
 
     def setNumericalFluxFuns(self, numFluxFunX, numFluxFunY, maxAbsEigFun):
 
@@ -304,9 +315,7 @@ class HyperbolicConsLaw:
             self.dim = 2
 
     def setFluxParams(self, **kwargs):
-        if kwargs is not None:
-            for key, value in kwargs.items():
-                setattr(self, key, value)
+        self.params.setParams( **kwargs)
 
     def setBoundaryCond(self, boundaryCondFunE = None, boundaryCondFunW = None, boundaryCondFunN = None, boundaryCondFunS = None):
 
@@ -329,6 +338,7 @@ class HyperbolicConsLaw:
 ### Checking if functions are called in the right order
         assert self.fluxesSet == True, "set numerical flux functions before setting U"
         assert self.boundaryCondSet == True, "set boundary conditions before initializing U"
+        self.initUSet = True
 ###
         self.nx = nx
         self.ny = ny
@@ -364,6 +374,13 @@ class HyperbolicConsLaw:
             return self.Uinit[i].u[self.order:-self.order]
         else:
             return self.Uinit[i].u[self.order:-self.order,self.order:-self.order]
+
+    def resetU(self):
+        if self.initUSet == False:
+            print("initial condition is not set")
+        else:
+            for i in range(self.numberConservedQuantities):
+                self.U[i].u = cp(self.Uinit[i].u)
 
     def timeStepExplicitOrd1(self, t, Tmax, CFL = 0.49):
         eig = self.maxAbsEigFun(self.U, self.dx, self.dy)
@@ -437,3 +454,28 @@ class HyperbolicConsLaw:
 
         return t
 
+
+class ConsLawFunctions:
+    numFluxFunX = None
+    numFluxFunY = None
+    maxAbsEigFun = None
+    boundaryCondFunE = None
+    boundaryCondFunW = None
+    boundaryCondFunN = None
+    boundaryCondFunS = None
+    def __init__(self, numFluxFunX, numFluxFunY, maxAbsEigFun, boundaryCondFunE, boundaryCondFunW, boundaryCondFunN, boundaryCondFunS):
+        self.numFluxFunX = types.MethodType(numFluxFunX, self) 
+        if not(numFluxFunY == None):
+            self.numFluxFunY = types.MethodType(numFluxFunY, self)
+        self.maxAbsEigFun = types.MethodType(maxAbsEigFun, self)
+    def setFluxParams(self, **kwargs):
+        if kwargs is not None:
+            for key, value in kwargs.items():
+                setattr(self, key, value)
+    def printFluxParams(self):
+        paramsString = ""
+        mem = [attr for attr in dir(self) if not callable(attr)  and not attr.startswith("__")]
+        for m in mem:
+             if (type(getattr(self, m)) == int or type(getattr(self, m)) == float ):
+                 paramsString += "_" + m + str(getattr(self, m))
+        return paramsString

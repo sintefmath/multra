@@ -2,16 +2,16 @@ import pylab as pl
 from GenericFVUtils import *
 
 def maxAbsEig(self, U, dx, dy):
-    return np.max(np.abs(self.a))/dx
+    return np.max(np.abs(self.params.a))/dx
 
 def FluxX(self, u, m):
-    return self.a[m]*u[m]
+    return self.params.a[m]*u[m]
 
 def numFluxX_upwind(self, U, dt, dx):
-    mask = self.a < 0.
+    mask = self.params.a < 0.
     Fu = np.empty_like(U[0].uW)
-    Fu[-mask] = self.a[-mask]*U[0].uW[-mask]
-    Fu[ mask] = self.a[ mask]*U[0].uE[ mask]
+    Fu[-mask] = self.params.a[-mask]*U[0].uW[-mask]
+    Fu[ mask] = self.params.a[ mask]*U[0].uE[ mask]
     return [Fu]
 
 def boundaryCondFunE(t, dx, y):
@@ -58,6 +58,8 @@ def linear(nx=1000, Tmax=1., order=1, limiter='minmod'):
         t = hcl.timeStepExplicit(t, Tmax)
 
 #plot result
+    pl.figure(1)
+    pl.title('linear 1d')
     pl.ion()
     pl.plot(hcl.xCc,hcl.getU(0))
     pl.plot(xCi,a_,'k:')
