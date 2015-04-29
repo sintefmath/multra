@@ -72,7 +72,7 @@ def linear(nx=1000, Tmax=1., order=1, limiter='minmod', method='upwind'):
     u0_init = np.zeros((nx))
     u1_init = np.zeros((nx))
     #u0_init[order:-order] = np.sin(2*np.pi*xCc)
-    hcl.setU([u0_init, u1_init], nx, ny, xCc, yCc)
+    hcl.setUinit([u0_init, u1_init], nx, ny, xCc, yCc)
 
 
 # set flux parameters

@@ -48,7 +48,7 @@ def linear(nx=100, ny=100 ,Tmax=1., order=1, limiter='minmod'):
     xv, yv = np.meshgrid(xCc, yCc)
     uinit = np.zeros((ny, nx))
     uinit[np.sqrt((xv-.5)**2 + (yv-.5)**2)<.25] = 1.
-    hcl.setU([uinit], ny, nx, xCc, yCc)
+    hcl.setUinit([uinit], ny, nx, xCc, yCc)
 
 # set flux parameters
     a_ = .5*np.ones((ny,nx+1))

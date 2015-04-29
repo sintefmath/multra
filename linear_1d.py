@@ -45,7 +45,7 @@ def linear(nx=1000, Tmax=1., order=1, limiter='minmod'):
     ny = None
     uinit = np.zeros((nx))
     #uinit[order:-order] = np.sin(2*np.pi*xCc)
-    hcl.setU([uinit], nx, ny, xCc, yCc)
+    hcl.setUinit([uinit], nx, ny, xCc, yCc)
 
 # set flux parameters
     xCi = np.linspace(0,1,nx+1) # cell interfaces
