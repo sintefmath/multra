@@ -454,37 +454,3 @@ class HyperbolicConsLaw:
 
         return t
 
-
-class ConsLawFunctions:
-    numFluxFunX = None
-    numFluxFunY = None
-    maxAbsEigFun = None
-    boundaryCondFunE = None
-    boundaryCondFunW = None
-    boundaryCondFunN = None
-    boundaryCondFunS = None
-    initialCondFun = None
-
-    def __init__(self, numFluxFunX, numFluxFunY, maxAbsEigFun, boundaryCondFunE, boundaryCondFunW, boundaryCondFunN, boundaryCondFunS, initialCondFun):
-        self.numFluxFunX = types.MethodType(numFluxFunX, self) 
-        if not(numFluxFunY == None):
-            self.numFluxFunY = types.MethodType(numFluxFunY, self)
-        self.maxAbsEigFun = types.MethodType(maxAbsEigFun, self)
-        self.boundaryCondFunE = boundaryCondFunE
-        self.boundaryCondFunW = boundaryCondFunW
-        self.boundaryCondFunN = boundaryCondFunN
-        self.boundaryCondFunS = boundaryCondFunS
-        self.initialCondFun = initialCondFun
-
-    def setFluxParams(self, **kwargs):
-        if kwargs is not None:
-            for key, value in kwargs.items():
-                setattr(self, key, value)
-
-    def printFluxParams(self):
-        paramsString = ""
-        mem = [attr for attr in dir(self) if not callable(attr) and not attr.startswith("__")]
-        for m in mem:
-             if (type(getattr(self, m)) == int or type(getattr(self, m)) == float ):
-                 paramsString += "_" + m + str(getattr(self, m))
-        return paramsString
