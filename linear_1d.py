@@ -35,8 +35,8 @@ def linear(nx=1000, Tmax=1., order=1, limiter='minmod'):
     hcl.setNumericalFluxFuns(numFluxX, numFluxY, maxAbsEig)
 
 # set boundary conditions
-    boundaryCondFunN = None
-    boundaryCondFunS = None
+    boundaryCondFunN = "Neumann"
+    boundaryCondFunS = "Neumann"
     hcl.setBoundaryCond(boundaryCondFunE, boundaryCondFunW, boundaryCondFunN, boundaryCondFunS)
 
 # set initial state
@@ -58,7 +58,6 @@ def linear(nx=1000, Tmax=1., order=1, limiter='minmod'):
         t = hcl.timeStepExplicit(t, Tmax)
 
 #plot result
-    pl.figure(1)
     pl.title('linear 1d')
     pl.ion()
     pl.plot(hcl.xCc,hcl.getU(0))

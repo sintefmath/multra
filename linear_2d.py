@@ -36,10 +36,10 @@ def linear(nx=100, ny=100 ,Tmax=1., order=1, limiter='minmod'):
     hcl.setNumericalFluxFuns(numFluxX_upwind, numFluxY_upwind, maxAbsEig)
 
 # set boundary conditions
-    boundaryCondFunN = None
-    boundaryCondFunS = None
-    boundaryCondFunW = None
-    boundaryCondFunE = None
+    boundaryCondFunN = "Neumann"
+    boundaryCondFunS = "Neumann"
+    boundaryCondFunW = "Neumann"
+    boundaryCondFunE = "Neumann"
     hcl.setBoundaryCond(boundaryCondFunE, boundaryCondFunW, boundaryCondFunN, boundaryCondFunS)
 
 # set initial state
@@ -48,7 +48,7 @@ def linear(nx=100, ny=100 ,Tmax=1., order=1, limiter='minmod'):
     xv, yv = np.meshgrid(xCc, yCc)
     uinit = np.zeros((ny, nx))
     uinit[np.sqrt((xv-.5)**2 + (yv-.5)**2)<.25] = 1.
-    hcl.setUinit([uinit], ny, nx, xCc, yCc)
+    hcl.setUinit([uinit], nx, ny, xCc, yCc)
 
 # set flux parameters
     a_ = .5*np.ones((ny,nx+1))
@@ -61,10 +61,9 @@ def linear(nx=100, ny=100 ,Tmax=1., order=1, limiter='minmod'):
         t = hcl.timeStepExplicit(t, Tmax)
 
 #plot result
-    pl.figure(3)
     pl.title('linear 2d')
     pl.ion()
-    pl.pcolor(xv, yv, hcl.getU(0), cmap=pl.gray())
+    pl.pcolor(xv, yv, hcl.getU(0), cmap='RdBu')
 
     return hcl
 

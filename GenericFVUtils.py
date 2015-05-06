@@ -89,7 +89,7 @@ def composeLRstate(limiter, dim, order):
     return lrState
 
 def composeBC_W(bcfun, dim, order):
-    if bcfun == None:
+    if (bcfun == None) or (bcfun == 'Neumann'):
         if dim==1:
             if order==1:
                 def boundaryCondW(self, t, dx, y):
@@ -138,7 +138,7 @@ def composeBC_W(bcfun, dim, order):
     return boundaryCondW
 
 def composeBC_E(bcfun, dim, order):
-    if bcfun == None:
+    if (bcfun == None) or (bcfun == 'Neumann'):
         if dim==1:
             if order==1:
                 def boundaryCondE(self, t, dx, y):
@@ -187,7 +187,7 @@ def composeBC_E(bcfun, dim, order):
     return boundaryCondE
 
 def composeBC_S(bcfun, order):
-    if bcfun == None:
+    if (bcfun == None) or (bcfun == 'Neumann'):
         if order==1:
             def boundaryCondS(self, t, dx, y):
                 for i in range(self.numberConservedQuantities):
@@ -212,7 +212,7 @@ def composeBC_S(bcfun, order):
     return boundaryCondS
 
 def composeBC_N(bcfun, order):
-    if bcfun == None:
+    if (bcfun == None) or (bcfun == 'Neumann'):
         if order==1:
             def boundaryCondN(self, t, dy, x):
                 for i in range(self.numberConservedQuantities):
@@ -249,7 +249,7 @@ class ConsQuantity:
         if ny==None:
             self.u = np.zeros(nx+2*order)
         else:
-            self.u = np.zeros((nx+2*order, ny+2*order))
+            self.u = np.zeros((ny+2*order, nx+2*order))
     def savetmp(self):
         self.u_tmp = 1.*self.u
 
@@ -305,7 +305,7 @@ class HyperbolicConsLaw:
 ###
         # add methods to THIS(=self) instance of the class
         self.numFluxFunX = types.MethodType(numFluxFunX, self) 
-        if not(numFluxFunY == None):
+        if numFluxFunY is not None:
             self.numFluxFunY = types.MethodType(numFluxFunY, self)
         self.maxAbsEigFun = types.MethodType(maxAbsEigFun, self)
 
@@ -382,7 +382,7 @@ class HyperbolicConsLaw:
             for i in range(self.numberConservedQuantities):
                 self.U[i].u = cp(self.Uinit[i].u)
 
-    def timeStepExplicitOrd1(self, t, Tmax, CFL = 0.49):
+    def timeStepExplicitOrd1(self, t, Tmax, CFL = .49):
         eig = self.maxAbsEigFun(self.U, self.dx, self.dy)
         dt = 1.*CFL/eig
         if t+dt>Tmax:
