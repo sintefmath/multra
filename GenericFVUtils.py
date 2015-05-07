@@ -104,12 +104,12 @@ def composeBC_W(bcfun, dim, order):
             if order==1:
                 def boundaryCondW(self, t, dx, y):
                     for i in range(self.numberConservedQuantities):
-                        self.U[i].u[ 0,:] = self.U[i].u[ 1,:]
+                        self.U[i].u[:, 0] = self.U[i].u[:, 1]
             else:
                 def boundaryCondW(self, t, dx, y):
                     for i in range(self.numberConservedQuantities):
-                        self.U[i].u[ 0,:] = self.U[i].u[ 3,:]
-                        self.U[i].u[ 1,:] = self.U[i].u[ 2,:]
+                        self.U[i].u[:, 0] = self.U[i].u[:, 3]
+                        self.U[i].u[:, 1] = self.U[i].u[:, 2]
     else:
         if dim==1:
             if order==1:
@@ -128,13 +128,13 @@ def composeBC_W(bcfun, dim, order):
                 def boundaryCondW(self, t, dx, y):
                     uBC = bcfun(t, dx, y)
                     for i in range(self.numberConservedQuantities):
-                        self.U[i].u[ 0,:] = uBC[i]
+                        self.U[i].u[order:-order, 0] = uBC[i]
             else:
                 def boundaryCondW(self, t, dx, y):
                     uBC = bcfun(t, dx, y)
                     for i in range(self.numberConservedQuantities):
-                        self.U[i].u[ 0,:] = uBC[i]
-                        self.U[i].u[ 1,:] = uBC[i]
+                        self.U[i].u[order:-order, 0] = uBC[i]
+                        self.U[i].u[order:-order, 1] = uBC[i]
     return boundaryCondW
 
 def composeBC_E(bcfun, dim, order):
@@ -153,12 +153,12 @@ def composeBC_E(bcfun, dim, order):
             if order==1:
                 def boundaryCondE(self, t, dx, y):
                     for i in range(self.numberConservedQuantities):
-                        self.U[i].u[-1,:] = self.U[i].u[-2,:]
+                        self.U[i].u[:, -1] = self.U[i].u[:, -2]
             else:
                 def boundaryCondE(self, t, dx, y):
                     for i in range(self.numberConservedQuantities):
-                        self.U[i].u[-1,:] = self.U[i].u[-4,:]
-                        self.U[i].u[-2,:] = self.U[i].u[-3,:]
+                        self.U[i].u[:, -1] = self.U[i].u[:, -4]
+                        self.U[i].u[:, -2] = self.U[i].u[:, -3]
     else:
         if dim==1:
             if order==1:
@@ -177,13 +177,13 @@ def composeBC_E(bcfun, dim, order):
                 def boundaryCondE(self, t, dx, y):
                     uBC = bcfun(t, dx, y)
                     for i in range(self.numberConservedQuantities):
-                        self.U[i].u[-1,:] = uBC[i]
+                        self.U[i].u[order:-order,-1] = uBC[i]
             else:
                 def boundaryCondE(self, t, dx, y):
                     uBC = bcfun(t, dx, y)
                     for i in range(self.numberConservedQuantities):
-                        self.U[i].u[-1,:] = uBC[i]
-                        self.U[i].u[-2,:] = uBC[i]
+                        self.U[i].u[order:-order,-1] = uBC[i]
+                        self.U[i].u[order:-order,-2] = uBC[i]
     return boundaryCondE
 
 def composeBC_S(bcfun, order):
@@ -191,24 +191,24 @@ def composeBC_S(bcfun, order):
         if order==1:
             def boundaryCondS(self, t, dx, y):
                 for i in range(self.numberConservedQuantities):
-                    self.U[i].u[:, 0] = self.U[i].u[:, 1]
+                    self.U[i].u[0, :] = self.U[i].u[1, :]
         else:
             def boundaryCondS(self, t, dx, y):
                 for i in range(self.numberConservedQuantities):
-                    self.U[i].u[:, 0] = self.U[i].u[:, 3]
-                    self.U[i].u[:, 1] = self.U[i].u[:, 2]
+                    self.U[i].u[0, :] = self.U[i].u[3, :]
+                    self.U[i].u[1, :] = self.U[i].u[2, :]
     else:
         if order==1:
             def boundaryCondS(self, t, dx, y):
                 uBC = bcfun(t, dx, y)
                 for i in range(self.numberConservedQuantities):
-                    self.U[i].u[:, 0] = uBC[i]
+                    self.U[i].u[0, order:-order] = uBC[i]
         else:
             def boundaryCondS(self, t, dx, y):
                 uBC = bcfun(t, dx, y)
                 for i in range(self.numberConservedQuantities):
-                    self.U[i].u[:, 0] = uBC[i]
-                    self.U[i].u[:, 1] = uBC[i]
+                    self.U[i].u[0, order:-order] = uBC[i]
+                    self.U[i].u[1, order:-order] = uBC[i]
     return boundaryCondS
 
 def composeBC_N(bcfun, order):
@@ -216,24 +216,24 @@ def composeBC_N(bcfun, order):
         if order==1:
             def boundaryCondN(self, t, dy, x):
                 for i in range(self.numberConservedQuantities):
-                    self.U[i].u[:,-1] = self.U[i].u[:,-2]
+                    self.U[i].u[-1, :] = self.U[i].u[-2, :]
         else:
             def boundaryCondN(self, t, dy, x):
                 for i in range(self.numberConservedQuantities):
-                    self.U[i].u[:,-1] = self.U[i].u[:,-4]
-                    self.U[i].u[:,-2] = self.U[i].u[:,-3]
+                    self.U[i].u[-1, :] = self.U[i].u[-4, :]
+                    self.U[i].u[-2, :] = self.U[i].u[-3, :]
     else:
         if order==1:
             def boundaryCondN(self, t, dy, x):
                 uBC = bcfun(t, dy, x)
                 for i in range(self.numberConservedQuantities):
-                    self.U[i].u[:,-1] = uBC[i]
+                    self.U[i].u[-1, order:-order] = uBC[i]
         else:
             def boundaryCondN(self, t, dy, x):
                 uBC = bcfun(t, dy, x)
                 for i in range(self.numberConservedQuantities):
-                    self.U[i].u[:,-1] = uBC[i]
-                    self.U[i].u[:,-2] = uBC[i]
+                    self.U[i].u[-1, order:-order] = uBC[i]
+                    self.U[i].u[-2, order:-order] = uBC[i]
     return boundaryCondN
 
 

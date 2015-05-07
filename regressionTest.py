@@ -11,15 +11,21 @@ def stillWorking():
     linear_1d.linear(1000, 1., 2, 'minmod')
 
     pl.figure(2)
-    linear_2d.linear(200, 205, .5, 1)
-    linear_2d.linear(200, 205, .5, 2, 'minmod')
-
+    linear_2d.linear(100, 105, .5, 1)
+    pl.colorbar()
     pl.figure(3)
-    linear_acoustics_1d.linear(1000, .5, 1)
-    linear_acoustics_1d.linear(1000, .5, 2, 'minmod')
+    linear_2d.linear(100, 105, .5, 2, 'minmod')
+    pl.colorbar()
 
     pl.figure(4)
-    linear_acoustics_2d.linear(200, 205, .1, 1)
-    linear_acoustics_2d.linear(200, 205, .1, 2, 'minmod')
+    linear_acoustics_1d.linear(1000, 1.5, 1)
+    linear_acoustics_1d.linear(1000, 1.5, 2, 'minmod')
+
+    pl.figure(5)
+    linear_acoustics_2d.linear(100, 105, 1.1, 1)
+    pl.colorbar()
+    pl.figure(6)
+    linear_acoustics_2d.linear(100, 105, 1.1, 2, 'minmod')
+    pl.colorbar()
 
     pl.show()

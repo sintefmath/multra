@@ -75,6 +75,14 @@ def numFluxY_HLL2(self, U, dt, dy):
 
     return [F0, F1, F2]
 
+def boundaryCondFunW(t, dx, y):
+# square pulse
+    u = 0.*y
+    if t<1.0:
+        #u = 0.25
+        u[(y>.45) & (y<.55)] = np.sin(2*2*np.pi*t)
+    return [0.*y, u, 0.*y]
+
 def linear(nx=100, ny=100 ,Tmax=1., order=1, limiter='minmod', method='HLL2'):
 
 # generate instance of class
@@ -93,7 +101,7 @@ def linear(nx=100, ny=100 ,Tmax=1., order=1, limiter='minmod', method='HLL2'):
 # set boundary conditions
     boundaryCondFunN = "Neumann"
     boundaryCondFunS = "Neumann"
-    boundaryCondFunW = "Neumann"
+    #boundaryCondFunW = "Neumann"
     boundaryCondFunE = "Neumann"
     hcl.setBoundaryCond(boundaryCondFunE, boundaryCondFunW, boundaryCondFunN, boundaryCondFunS)
 
@@ -101,16 +109,31 @@ def linear(nx=100, ny=100 ,Tmax=1., order=1, limiter='minmod', method='HLL2'):
     xCc = np.linspace(0.+.5/nx,1.-.5/nx,nx) # cell centers
     yCc = np.linspace(0.+.5/ny,1.-.5/ny,ny) # cell centers
     xv, yv = np.meshgrid(xCc, yCc)
-    uinit = np.zeros((ny, nx))
-    uinit[np.sqrt((xv-.5)**2 + (yv-.5)**2)<.25] = 1.
-    hcl.setUinit([uinit, 0.*uinit, 0.*uinit], nx, ny, xCc, yCc)
+    uinit = .1*np.ones((ny, nx))
+    uinit[np.sqrt((xv-.25)**2 + (yv-.25)**2)<.125] = 1.
+    hcl.setUinit([0*uinit, 0.*uinit, 0.*uinit], nx, ny, xCc, yCc)
 
 # set flux parameters
     rho0_ = 10.
     K0_ = 1.
     c0_ = np.sqrt(K0_/rho0_)
-    u0_ = .1*np.ones((ny, nx+1))
-    v0_ = .1*np.ones((ny+1, nx))
+
+    xCi = np.linspace(1.+.5,1.+-.5,nx+1) # cell interface
+    yCi = np.linspace(1.+.5,1.+-.5,ny) # cell interface
+    xvi, yvi = np.meshgrid(xCi, yCi)
+    u0_ = 0*xvi
+
+    #u0_ = np.ones((ny, nx+1))
+    #u0_[xvi<0] = -1
+
+    xCi = np.linspace(1.+.5,1.+-.5,nx) # cell interface
+    yCi = np.linspace(1.+.5,1.+-.5,ny+1) # cell interface
+    xvi, yvi = np.meshgrid(xCi, yCi)
+    v0_ = 0*yvi
+
+    #v0_ = np.ones((ny+1, nx))
+    #v0_[yvi<0] = -1
+
     hcl.setFluxParams(rho0 = rho0_, K0 = K0_, c0 = c0_, u0 = u0_, v0 = v0_)
 
 # apply explicit time stepping
@@ -124,4 +147,3 @@ def linear(nx=100, ny=100 ,Tmax=1., order=1, limiter='minmod', method='HLL2'):
     pl.pcolor(xv, yv, hcl.getU(0), cmap='RdBu')
 
     return hcl
-

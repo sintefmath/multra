@@ -43,9 +43,10 @@ def boundaryCondFunE(t, dx, y):
 def boundaryCondFunW(t, dx, y):
 # square pulse
     u = 0.
-    if (t<0.4):
-        u = 0.25
-    return [0., u]
+    if (t<1.0):
+        #u = 0.25
+        u = np.sin(2*2*np.pi*t)
+    return [0, u]
 
 def linear(nx=1000, Tmax=1., order=1, limiter='minmod', method='upwind'):
 
@@ -81,8 +82,9 @@ def linear(nx=1000, Tmax=1., order=1, limiter='minmod', method='upwind'):
     rho0_ = 10.
     K0_ = 1.
     c0_ = np.sqrt(K0_/rho0_)
-    #u0_ = -xCi + .5
-    u0_ = xCi*0. + .5
+    u0_ = -xCi + .5
+    u0_ *= .0
+    #u0_ = np.linspace(1,-1,nx+1)
     hcl.setFluxParams(rho0 = rho0_, K0 = K0_, c0 = c0_, u0 = u0_)
 
 # apply explicit time stepping
