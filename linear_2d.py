@@ -18,14 +18,14 @@ def numFluxY_upwind(self, U, dt, dx):
     Fu[ mask] = self.params.b[ mask]*U[0].uN[ mask]
     return [Fu]
 
-def boundaryCondFunE(t, dx, y):
-    return [0.]
-def boundaryCondFunW(t, dx, y):
-# square pulse
-    u = 0.
-    if (t<0.4):
-        u = 0.25
-    return [u]
+#def boundaryCondFunE(t, dx, y):
+#    return [0.]
+#def boundaryCondFunW(t, dx, y):
+## square pulse
+#    u = 0.
+#    if (t<0.4):
+#        u = 0.25
+#    return [u]
 
 def linear(nx=100, ny=100 ,Tmax=1., order=1, limiter='minmod'):
 

@@ -38,8 +38,6 @@ def numFluxX_upwind(self, U, dt, dx):
 
     return [F0, F1]
 
-def boundaryCondFunE(t, dx, y):
-    return [0., 0.]
 def boundaryCondFunW(t, dx, y):
 # square pulse
     u = 0.
@@ -62,6 +60,7 @@ def linear(nx=1000, Tmax=1., order=1, limiter='minmod', method='upwind'):
     hcl.setNumericalFluxFuns(numFluxX, numFluxY, maxAbsEig)
 
 # set boundary conditions
+    boundaryCondFunE = "Neumann"
     boundaryCondFunN = "Neumann"
     boundaryCondFunS = "Neumann"
     hcl.setBoundaryCond(boundaryCondFunE, boundaryCondFunW, boundaryCondFunN, boundaryCondFunS)
