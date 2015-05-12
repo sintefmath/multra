@@ -1,11 +1,11 @@
 import pylab as pl
 from GenericFVUtils import *
 
-def maxAbsEig(self, U, dx, dy):
+def maxAbsEig(hcl):
     return max( \
-                max( np.max(abs(self.params.u0 - self.params.c0)), np.max(abs(self.params.u0 + self.params.c0)) )/dx \
+                max( np.max(abs(hcl.params.u0 - hcl.params.c0)), np.max(abs(hcl.params.u0 + hcl.params.c0)) )/hcl.dx \
                 , \
-                max( np.max(abs(self.params.v0 - self.params.c0)), np.max(abs(self.params.v0 + self.params.c0)) )/dy \
+                max( np.max(abs(hcl.params.v0 - hcl.params.c0)), np.max(abs(hcl.params.v0 + hcl.params.c0)) )/hcl.dy \
            )
 
 def numFluxX_HLL2(self, U, dt, dx):
@@ -86,7 +86,7 @@ def boundaryCondFunW(t, dx, y):
 def linear(nx=100, ny=100 ,Tmax=1., order=1, limiter='minmod', method='HLL2'):
 
 # generate instance of class
-    hcl = HyperbolicConsLaw(order, limiter)
+    hcl = HyperbolicConsLaw(order, limiter, True)
 
 #set numerical Flux
     if method=='HLL2':
@@ -138,8 +138,14 @@ def linear(nx=100, ny=100 ,Tmax=1., order=1, limiter='minmod', method='HLL2'):
 
 # apply explicit time stepping
     t = 0.
+# flux is linear, i.e., eigenvalues are independent of time
+    eig = maxAbsEig(hcl)
+    CFL = 0.49
+    dt = 1.*CFL/eig
     while t<Tmax:
-        t = hcl.timeStepExplicit(t, Tmax)
+        if t+dt>Tmax:
+            dt=Tmax-t
+        t = hcl.timeStepExplicit(t, dt)
 
 #plot result
     pl.title('linear acoustics 2d')

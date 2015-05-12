@@ -1,8 +1,8 @@
 import pylab as pl
 from GenericFVUtils import *
 
-def maxAbsEig(self, U, dx, dy):
-    return np.max(np.abs(self.params.a))/dx
+def maxAbsEig(hcl):
+    return np.max(np.abs(hcl.params.a))/hcl.dx
 
 def FluxX(self, u, m):
     return self.params.a[m]*u[m]
@@ -27,7 +27,7 @@ def boundaryCondFunW(t, dx, y):
 def linear(nx=1000, Tmax=1., order=1, limiter='minmod'):
 
 # generate instance of class
-    hcl = HyperbolicConsLaw(order, limiter)
+    hcl = HyperbolicConsLaw(order, limiter, True)
 
 #set numerical Flux
     numFluxX = numFluxX_upwind
@@ -54,8 +54,14 @@ def linear(nx=1000, Tmax=1., order=1, limiter='minmod'):
 
 # apply explicit time stepping
     t = 0.
+# flux is linear, i.e., eigenvalues are independent of time
+    eig = maxAbsEig(hcl)
+    CFL = 0.49
+    dt = 1.*CFL/eig
     while t<Tmax:
-        t = hcl.timeStepExplicit(t, Tmax)
+        if t+dt>Tmax:
+            dt=Tmax-t
+        t = hcl.timeStepExplicit(t, dt)
 
 #plot result
     pl.title('linear 1d')

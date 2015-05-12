@@ -1,8 +1,8 @@
 import pylab as pl
 from GenericFVUtils import *
 
-def maxAbsEig(self, U, dx, dy):
-    return max( np.max(abs(self.params.u0 - self.params.c0)), np.max(abs(self.params.u0 + self.params.c0)) )/dx
+def maxAbsEig(hcl):
+    return max( np.max(abs(hcl.params.u0 - hcl.params.c0)), np.max(abs(hcl.params.u0 + hcl.params.c0)) )/hcl.dx
 
 #def FluxX(u):
 #    return [u0*u[0] + K0*u[1], 1./rho0*u[0] + u0*u[1]]
@@ -49,7 +49,7 @@ def boundaryCondFunW(t, dx, y):
 def linear(nx=1000, Tmax=1., order=1, limiter='minmod', method='upwind'):
 
 # generate instance of class
-    hcl = HyperbolicConsLaw(order, limiter)
+    hcl = HyperbolicConsLaw(order, limiter, True)
 
 #set numerical Flux
     if method=='LxF':
@@ -88,8 +88,14 @@ def linear(nx=1000, Tmax=1., order=1, limiter='minmod', method='upwind'):
 
 # apply explicit time stepping
     t = 0.
+# flux is linear, i.e., eigenvalues are independent of time
+    eig = maxAbsEig(hcl)
+    CFL = 0.49
+    dt = 1.*CFL/eig
     while t<Tmax:
-        t = hcl.timeStepExplicit(t, Tmax)
+        if t+dt>Tmax:
+            dt=Tmax-t
+        t = hcl.timeStepExplicit(t, dt)
 
 #plot result
     pl.title('linear acoustics 1d')

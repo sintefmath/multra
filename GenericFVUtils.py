@@ -289,13 +289,19 @@ class HyperbolicConsLaw:
     initUSet = False
     numberConservedQuantities = None
 
-    def __init__(self, order, limiter):
+    def __init__(self, order, limiter, linearFlux = False):
         self.order = order
         self.limiter = limiter
-        if order==1:
-            self.timeStepExplicit = self.timeStepExplicitOrd1
+        if linearFlux:
+            if order==1:
+                self.timeStepExplicit = self.timeStepExplicitOrd1_linearFlux
+            else:
+                self.timeStepExplicit = self.timeStepExplicitOrd2_linearFlux
         else:
-            self.timeStepExplicit = self.timeStepExplicitOrd2
+            if order==1:
+                self.timeStepExplicit = self.timeStepExplicitOrd1
+            else:
+                self.timeStepExplicit = self.timeStepExplicitOrd2
         self.params = FluxParams()
 
     def setNumericalFluxFuns(self, numFluxFunX, numFluxFunY, maxAbsEigFun):
@@ -390,14 +396,14 @@ class HyperbolicConsLaw:
         t=t+dt
 
         ### apply boundary conditions
-        self.boundaryCondW(t, self.dx, self.yCc)
-        self.boundaryCondE(t, self.dx, self.yCc)
+        self.boundaryCondW(t-dt, self.dx, self.yCc)
+        self.boundaryCondE(t-dt, self.dx, self.yCc)
         ### states at cell interfaces
         for i in range(self.numberConservedQuantities):
             self.U[i].uW, self.U[i].uE = self.lrState(self.U[i].u, 0, self.order)
         if self.dim==2:
-            self.boundaryCondN(t, self.dy, self.xCc)
-            self.boundaryCondS(t, self.dy, self.xCc)
+            self.boundaryCondN(t-dt, self.dy, self.xCc)
+            self.boundaryCondS(t-dt, self.dy, self.xCc)
             for i in range(self.numberConservedQuantities):
                 self.U[i].uS, self.U[i].uN = self.lrState(self.U[i].u, 1, self.order)
         ### Fluxes across cell interfaces X-dir
@@ -426,14 +432,78 @@ class HyperbolicConsLaw:
 
         for internalsteps in range(1,self.order+1):
             ### apply boundary conditions
-            self.boundaryCondW(t, self.dx, self.yCc)
-            self.boundaryCondE(t, self.dx, self.yCc)
+            self.boundaryCondW(t-dt, self.dx, self.yCc)
+            self.boundaryCondE(t-dt, self.dx, self.yCc)
             ### states at cell interfaces
             for i in range(self.numberConservedQuantities):
                 self.U[i].uW, self.U[i].uE = self.lrState(self.U[i].u, 0, self.order)
             if self.dim==2:
-                self.boundaryCondN(t, self.dy, self.xCc)
-                self.boundaryCondS(t, self.dy, self.xCc)
+                self.boundaryCondN(t-dt, self.dy, self.xCc)
+                self.boundaryCondS(t-dt, self.dy, self.xCc)
+                for i in range(self.numberConservedQuantities):
+                    self.U[i].uS, self.U[i].uN = self.lrState(self.U[i].u, 1, self.order)
+            ### Fluxes across cell interfaces X-dir
+            FX = self.numFluxFunX(self.U, dt, self.dx) # gives back a list
+            ### advance FV scheme
+            if self.dim==1:
+                for i in range(self.numberConservedQuantities):
+                    self.U[i].u[self.order:-self.order] -= dt/self.dx*(FX[i][1:] - FX[i][0:-1])
+            else:
+                FY = self.numFluxFunY(self.U, dt, self.dy) # gives back a list
+                for i in range(self.numberConservedQuantities):
+                    self.U[i].u[self.order:-self.order,self.order:-self.order] -= \
+                            dt/self.dx*(FX[i][:,1:] - FX[i][:,0:-1]) + \
+                            dt/self.dy*(FY[i][1:,:] - FY[i][0:-1,:])
+
+        for i in range(self.numberConservedQuantities):
+            self.U[i].u = 0.5*(self.U[i].u + self.U[i].u_tmp)
+
+        return t
+
+    def timeStepExplicitOrd1_linearFlux(self, t, dt):
+        t=t+dt
+
+        ### apply boundary conditions
+        self.boundaryCondW(t-dt, self.dx, self.yCc)
+        self.boundaryCondE(t-dt, self.dx, self.yCc)
+        ### states at cell interfaces
+        for i in range(self.numberConservedQuantities):
+            self.U[i].uW, self.U[i].uE = self.lrState(self.U[i].u, 0, self.order)
+        if self.dim==2:
+            self.boundaryCondN(t-dt, self.dy, self.xCc)
+            self.boundaryCondS(t-dt, self.dy, self.xCc)
+            for i in range(self.numberConservedQuantities):
+                self.U[i].uS, self.U[i].uN = self.lrState(self.U[i].u, 1, self.order)
+        ### Fluxes across cell interfaces X-dir
+        FX = self.numFluxFunX(self.U, dt, self.dx) # gives back a list
+        if self.dim==1:
+            for i in range(self.numberConservedQuantities):
+                self.U[i].u[self.order:-self.order] -= dt/self.dx*(FX[i][1:] - FX[i][0:-1])
+        else:
+            FY = self.numFluxFunY(self.U, dt, self.dy) # gives back a list
+            for i in range(self.numberConservedQuantities):
+                self.U[i].u[self.order:-self.order,self.order:-self.order] -= \
+                        dt/self.dx*(FX[i][:,1:] - FX[i][:,0:-1]) + \
+                        dt/self.dy*(FY[i][1:,:] - FY[i][0:-1,:])
+
+        return t
+
+    def timeStepExplicitOrd2_linearFlux(self, t, dt):
+        t=t+dt
+
+        for i in range(self.numberConservedQuantities):
+            self.U[i].savetmp()
+
+        for internalsteps in range(1,self.order+1):
+            ### apply boundary conditions
+            self.boundaryCondW(t-dt, self.dx, self.yCc)
+            self.boundaryCondE(t-dt, self.dx, self.yCc)
+            ### states at cell interfaces
+            for i in range(self.numberConservedQuantities):
+                self.U[i].uW, self.U[i].uE = self.lrState(self.U[i].u, 0, self.order)
+            if self.dim==2:
+                self.boundaryCondN(t-dt, self.dy, self.xCc)
+                self.boundaryCondS(t-dt, self.dy, self.xCc)
                 for i in range(self.numberConservedQuantities):
                     self.U[i].uS, self.U[i].uN = self.lrState(self.U[i].u, 1, self.order)
             ### Fluxes across cell interfaces X-dir

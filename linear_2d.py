@@ -1,8 +1,8 @@
 import pylab as pl
 from GenericFVUtils import *
 
-def maxAbsEig(self, U, dx, dy):
-    return max(np.max(np.abs(self.params.a))/dx,np.max(np.abs(self.params.b))/dy)
+def maxAbsEig(hcl):
+    return max(np.max(np.abs(hcl.params.a))/hcl.dx,np.max(np.abs(hcl.params.b))/hcl.dy)
 
 def numFluxX_upwind(self, U, dt, dx):
     mask = self.params.a < 0.
@@ -30,7 +30,7 @@ def numFluxY_upwind(self, U, dt, dx):
 def linear(nx=100, ny=100 ,Tmax=1., order=1, limiter='minmod'):
 
 # generate instance of class
-    hcl = HyperbolicConsLaw(order, limiter)
+    hcl = HyperbolicConsLaw(order, limiter, True)
 
 #set numerical Flux
     hcl.setNumericalFluxFuns(numFluxX_upwind, numFluxY_upwind, maxAbsEig)
@@ -57,8 +57,14 @@ def linear(nx=100, ny=100 ,Tmax=1., order=1, limiter='minmod'):
 
 # apply explicit time stepping
     t = 0.
+# flux is linear, i.e., eigenvalues are independent of time
+    eig = maxAbsEig(hcl)
+    CFL = 0.49
+    dt = 1.*CFL/eig
     while t<Tmax:
-        t = hcl.timeStepExplicit(t, Tmax)
+        if t+dt>Tmax:
+            dt=Tmax-t
+        t = hcl.timeStepExplicit(t, dt)
 
 #plot result
     pl.title('linear 2d')
