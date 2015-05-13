@@ -1,6 +1,11 @@
 import pylab as pl
 from GenericFVUtils import *
 
+rho0_ = 10.
+K0_ = 1.
+c0_ = np.sqrt(K0_/rho0_)
+
+
 def maxAbsEig(hcl):
     return max( \
                 max( np.max(abs(hcl.params.u0 - hcl.params.c0)), np.max(abs(hcl.params.u0 + hcl.params.c0)) )/hcl.dx \
@@ -83,6 +88,14 @@ def boundaryCondFunW(t, dx, y):
         u[(y>.45) & (y<.55)] = np.sin(2*2*np.pi*t)
     return [0.*y, u, 0.*y]
 
+def initialCondFun(xv, yv):
+    #uinit = .1*np.ones((ny, nx))
+    #uinit[np.sqrt((xv-.25)**2 + (yv-.25)**2)<.125] = 1.
+    u0_init = np.zeros_like(xv)
+    u1_init = np.zeros_like(xv)
+    u2_init = np.zeros_like(xv)
+    return [u0_init, u1_init, u2_init]
+
 def linear(nx=100, ny=100 ,Tmax=1., order=1, limiter='minmod', method='HLL2'):
 
 # generate instance of class
@@ -109,15 +122,9 @@ def linear(nx=100, ny=100 ,Tmax=1., order=1, limiter='minmod', method='HLL2'):
     xCc = np.linspace(0.+.5/nx,1.-.5/nx,nx) # cell centers
     yCc = np.linspace(0.+.5/ny,1.-.5/ny,ny) # cell centers
     xv, yv = np.meshgrid(xCc, yCc)
-    uinit = .1*np.ones((ny, nx))
-    uinit[np.sqrt((xv-.25)**2 + (yv-.25)**2)<.125] = 1.
-    hcl.setUinit([0*uinit, 0.*uinit, 0.*uinit], nx, ny, xCc, yCc)
+    hcl.setUinit(initialCondFun(xv, yv), nx, ny, xCc, yCc)
 
 # set flux parameters
-    rho0_ = 10.
-    K0_ = 1.
-    c0_ = np.sqrt(K0_/rho0_)
-
     xCi = np.linspace(1.+.5,1.+-.5,nx+1) # cell interface
     yCi = np.linspace(1.+.5,1.+-.5,ny) # cell interface
     xvi, yvi = np.meshgrid(xCi, yCi)

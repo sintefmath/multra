@@ -1,8 +1,16 @@
 import pylab as pl
 from GenericFVUtils import *
 
+rho0_ = 10.
+K0_ = 1.
+c0_ = np.sqrt(K0_/rho0_)
+
 def maxAbsEig(hcl):
     return max( np.max(abs(hcl.params.u0 - hcl.params.c0)), np.max(abs(hcl.params.u0 + hcl.params.c0)) )/hcl.dx
+#for time dependent flux use
+#    def maxAbsEig(self, U, dx, dy):
+#        return max( np.max(abs(self.params.u0 - self.params.c0)), np.max(abs(self.params.u0 + self.params.c0)) )/dx
+
 
 #def FluxX(u):
 #    return [u0*u[0] + K0*u[1], 1./rho0*u[0] + u0*u[1]]
@@ -46,6 +54,13 @@ def boundaryCondFunW(t, dx, y):
         u = np.sin(2*2*np.pi*t)
     return [0, u]
 
+def initialCondFun(x):
+    #u0_init[order:-order] = np.sin(2*np.pi*xCc)
+    #u0_init[xCc<.5] = 1.
+    u0_init = np.zeros_like(x)
+    u1_init = np.zeros_like(x)
+    return [u0_init, u1_init]
+
 def linear(nx=1000, Tmax=1., order=1, limiter='minmod', method='upwind'):
 
 # generate instance of class
@@ -69,21 +84,14 @@ def linear(nx=1000, Tmax=1., order=1, limiter='minmod', method='upwind'):
     xCc = np.linspace(0.+.5/nx,1.-.5/nx,nx) # cell centers
     yCc = None
     ny = None
-    u0_init = np.zeros((nx))
-    u1_init = np.zeros((nx))
-    #u0_init[order:-order] = np.sin(2*np.pi*xCc)
-    #u0_init[xCc<.5] = 1.
-    hcl.setUinit([u0_init, u1_init], nx, ny, xCc, yCc)
+    hcl.setUinit(initialCondFun(xCc), nx, ny, xCc, yCc)
 
 
 # set flux parameters
     xCi = np.linspace(0,1,nx+1) # cell interfaces
-    rho0_ = 10.
-    K0_ = 1.
-    c0_ = np.sqrt(K0_/rho0_)
+    #u0_ = np.linspace(1,-1,nx+1)
     u0_ = -xCi + .5
     u0_ *= .0
-    #u0_ = np.linspace(1,-1,nx+1)
     hcl.setFluxParams(rho0 = rho0_, K0 = K0_, c0 = c0_, u0 = u0_)
 
 # apply explicit time stepping

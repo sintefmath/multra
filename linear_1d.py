@@ -14,15 +14,21 @@ def numFluxX_upwind(self, U, dt, dx):
     Fu[ mask] = self.params.a[ mask]*U[0].uE[ mask]
     return [Fu]
 
-def boundaryCondFunE(t, dx, y):
-    return [0.]
+#def boundaryCondFunE(t, dx, y):
+#    return [0.]
+#
+#def boundaryCondFunW(t, dx, y):
+## square pulse
+#    u = 0.
+#    if (t<0.4):
+#        u = 0.25
+#    return [u]
 
-def boundaryCondFunW(t, dx, y):
-# square pulse
-    u = 0.
-    if (t<0.4):
-        u = 0.25
+def initialCondFun(x):
+    u = np.zeros_like(x)
+    u[np.abs(x-.25)<.125] = 1.
     return [u]
+
 
 def linear(nx=1000, Tmax=1., order=1, limiter='minmod'):
 
@@ -35,6 +41,8 @@ def linear(nx=1000, Tmax=1., order=1, limiter='minmod'):
     hcl.setNumericalFluxFuns(numFluxX, numFluxY, maxAbsEig)
 
 # set boundary conditions
+    boundaryCondFunE = "Neumann"
+    boundaryCondFunW = "Neumann"
     boundaryCondFunN = "Neumann"
     boundaryCondFunS = "Neumann"
     hcl.setBoundaryCond(boundaryCondFunE, boundaryCondFunW, boundaryCondFunN, boundaryCondFunS)
@@ -43,13 +51,12 @@ def linear(nx=1000, Tmax=1., order=1, limiter='minmod'):
     xCc = np.linspace(0.+.5/nx,1.-.5/nx,nx) # cell centers
     yCc = None
     ny = None
-    uinit = np.zeros((nx))
-    #uinit[order:-order] = np.sin(2*np.pi*xCc)
-    hcl.setUinit([uinit], nx, ny, xCc, yCc)
+    hcl.setUinit(initialCondFun(xCc), nx, ny, xCc, yCc)
 
 # set flux parameters
     xCi = np.linspace(0,1,nx+1) # cell interfaces
-    a_ = -xCi + .5
+    #a_ = -xCi + .5
+    a_ = .25*np.ones_like(xCi)
     hcl.setFluxParams(a = a_)
 
 # apply explicit time stepping

@@ -18,14 +18,10 @@ def numFluxY_upwind(self, U, dt, dx):
     Fu[ mask] = self.params.b[ mask]*U[0].uN[ mask]
     return [Fu]
 
-#def boundaryCondFunE(t, dx, y):
-#    return [0.]
-#def boundaryCondFunW(t, dx, y):
-## square pulse
-#    u = 0.
-#    if (t<0.4):
-#        u = 0.25
-#    return [u]
+def initialCondFun(xv, yv):
+    u = np.zeros_like(xv)
+    u[np.sqrt((xv-.25)**2 + (yv-.25)**2)<.125] = 1.
+    return [u]
 
 def linear(nx=100, ny=100 ,Tmax=1., order=1, limiter='minmod'):
 
@@ -46,9 +42,7 @@ def linear(nx=100, ny=100 ,Tmax=1., order=1, limiter='minmod'):
     xCc = np.linspace(0.+.5/nx,1.-.5/nx,nx) # cell centers
     yCc = np.linspace(0.+.5/ny,1.-.5/ny,ny) # cell centers
     xv, yv = np.meshgrid(xCc, yCc)
-    uinit = np.zeros((ny, nx))
-    uinit[np.sqrt((xv-.5)**2 + (yv-.5)**2)<.25] = 1.
-    hcl.setUinit([uinit], nx, ny, xCc, yCc)
+    hcl.setUinit(initialCondFun(xv, yv), nx, ny, xCc, yCc)
 
 # set flux parameters
     a_ = .5*np.ones((ny,nx+1))
