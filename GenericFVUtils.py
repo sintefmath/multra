@@ -245,7 +245,9 @@ class ConsQuantity:
     uS = None
     uE = None
     uN = None
+    order = None
     def __init__(self, nx, ny, order):
+        self.order = order
         if ny==None:
             self.u = np.zeros(nx+2*order)
         else:
