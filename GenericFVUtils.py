@@ -262,7 +262,7 @@ class FluxParams:
                 setattr(self, key, value)
 
 
-class HyperbolicConsLaw:
+class HyperbolicConsLawNumSolver:
     U = None
     Uinit = None
     dim = None
@@ -276,6 +276,7 @@ class HyperbolicConsLaw:
     limiter = None
     numFluxFunX = None
     numFluxFunY = None
+    numSourceFun = None
     maxAbsEigFun = None
     boundaryCondE = None
     boundaryCondW = None
@@ -291,19 +292,27 @@ class HyperbolicConsLaw:
     initUSet = False
     numberConservedQuantities = None
 
-    def __init__(self, order, limiter, linearFlux = False):
+    def __init__(self, dim, order, limiter, linearFlux = False, nonConsFlux = False):
+        self.dim = dim
         self.order = order
         self.limiter = limiter
-        if linearFlux:
-            if order==1:
-                self.timeStepExplicit = self.timeStepExplicitOrd1_linearFlux
+        self.isNonConservative = nonConsFlux
+        if nonConsFlux:
+            if linearFlux:
+                self.timeStepExplicit = self.timeStepExplicit_Nonconservative_linearFlux
             else:
-                self.timeStepExplicit = self.timeStepExplicitOrd2_linearFlux
+                self.timeStepExplicit = self.timeStepExplicit_Nonconservative
         else:
-            if order==1:
-                self.timeStepExplicit = self.timeStepExplicitOrd1
+            if linearFlux:
+                if order==1:
+                    self.timeStepExplicit = self.timeStepExplicitOrd1_linearFlux
+                else:
+                    self.timeStepExplicit = self.timeStepExplicitOrd2_linearFlux
             else:
-                self.timeStepExplicit = self.timeStepExplicitOrd2
+                if order==1:
+                    self.timeStepExplicit = self.timeStepExplicitOrd1
+                else:
+                    self.timeStepExplicit = self.timeStepExplicitOrd2
         self.params = FluxParams()
 
     def setNumericalFluxFuns(self, numFluxFunX, numFluxFunY, maxAbsEigFun):
@@ -317,18 +326,15 @@ class HyperbolicConsLaw:
             self.numFluxFunY = types.MethodType(numFluxFunY, self)
         self.maxAbsEigFun = types.MethodType(maxAbsEigFun, self)
 
-        if numFluxFunY==None:
-            self.dim = 1
-        else:
-            self.dim = 2
+    def setNumericalSourceFun(self, numSourceFun):
+        self.numSourceFun = types.MethodType(numSourceFun, self)
 
-    def setFluxParams(self, **kwargs):
+    def setFluxAndSourceParams(self, **kwargs):
         self.params.setParams( **kwargs)
 
     def setBoundaryCond(self, boundaryCondFunE = None, boundaryCondFunW = None, boundaryCondFunN = None, boundaryCondFunS = None):
 
-### Checking if functions are called in the right order
-        assert self.fluxesSet == True, "set numerical flux functions before setting boundary conditions"
+###
         self.boundaryCondSet = True
 ###
 
@@ -343,9 +349,7 @@ class HyperbolicConsLaw:
 
     def setUinit(self, uinit, nx, ny, xCc, yCc):
 
-### Checking if functions are called in the right order
-        assert self.fluxesSet == True, "set numerical flux functions before setting U"
-        assert self.boundaryCondSet == True, "set boundary conditions before initializing U"
+###
         self.initUSet = True
 ###
         self.nx = nx
@@ -358,7 +362,7 @@ class HyperbolicConsLaw:
 
         self.numberConservedQuantities = len(uinit)
 
-        assert self.dim == uinit[0].ndim, "dimensions of flux functions and initial conditions are not equal"
+        assert self.dim == uinit[0].ndim, "Error: Dimensions of initial conditions do not match registerd dimension of problem."
 
         self.U = [ConsQuantity(self.nx, self.ny, self.order) for i in range(self.numberConservedQuantities)]
         self.Uinit = [ConsQuantity(self.nx, self.ny, self.order) for i in range(self.numberConservedQuantities)]
@@ -370,6 +374,16 @@ class HyperbolicConsLaw:
             else:
                 self.U[i].u[self.order:-self.order,self.order:-self.order] = uinit[i]
                 self.Uinit[i].u[self.order:-self.order,self.order:-self.order] = uinit[i]
+
+    def selfCheck(self):
+### Checking if functions are called in the right order
+        assert self.dim == uinit[0].ndim, "Error: Dimensions of initial conditions do not match registerd dimension of problem."
+        assert self.boundaryCondSet == True, "Error: No boundary conditions set for U."
+        assert self.initUSet == True, "Error: No initial condition set for U."
+        if self.fluxesSet == False:
+            "Warning: No numerical flux functions set."
+###
+
 
     def getU(self, i):
         if self.dim==1:
@@ -526,3 +540,85 @@ class HyperbolicConsLaw:
 
         return t
 
+
+    def timeStepExplicit_Nonconservative(self, t, Tmax, CFL = .49):
+        eig = self.maxAbsEigFun(self.U, self.dx, self.dy)
+        dt = 1.*CFL/eig
+        if t+dt>Tmax:
+            dt=Tmax-t
+        t=t+dt
+
+        ### apply boundary conditions
+        self.boundaryCondW(t-dt, self.dx, self.yCc)
+        self.boundaryCondE(t-dt, self.dx, self.yCc)
+        ### states at cell interfaces
+        for i in range(self.numberConservedQuantities):
+            self.U[i].uW, self.U[i].uE = self.lrState(self.U[i].u, 0, self.order)
+        if self.dim==2:
+            self.boundaryCondN(t-dt, self.dy, self.xCc)
+            self.boundaryCondS(t-dt, self.dy, self.xCc)
+            for i in range(self.numberConservedQuantities):
+                self.U[i].uS, self.U[i].uN = self.lrState(self.U[i].u, 1, self.order)
+        ### Fluxes
+        FX = self.numFluxFunX(self.U, dt, self.dx) # gives back a list
+        if self.numSourceFun == None:
+            if self.dim==1:
+                for i in range(self.numberConservedQuantities):
+                    self.U[i].u[self.order:-self.order] -= dt*FX[i]/self.dx
+            else:
+        ### Fluxes
+                FY = self.numFluxFunY(self.U, dt, self.dy) # gives back a list
+                for i in range(self.numberConservedQuantities):
+                    self.U[i].u[self.order:-self.order,self.order:-self.order] -= dt*(FX[i]/self.dx + FY[i]/self.dy)
+        else:
+        ### Sources
+            S = self.numSourceFun(self.U, dt, self.dx, self.dy)
+            if self.dim==1:
+                for i in range(self.numberConservedQuantities):
+                    self.U[i].u[self.order:-self.order] -= dt*(FX[i]/self.dx - S[i])
+            else:
+        ### Fluxes
+                FY = self.numFluxFunY(self.U, dt, self.dy) # gives back a list
+                for i in range(self.numberConservedQuantities):
+                    self.U[i].u[self.order:-self.order,self.order:-self.order] -= dt*(FX[i]/self.dx + FY[i]/self.dy - S[i])
+
+        return t
+
+    def timeStepExplicit_Nonconservative_linearFlux(self, t, dt):
+        t=t+dt
+
+        ### apply boundary conditions
+        self.boundaryCondW(t-dt, self.dx, self.yCc)
+        self.boundaryCondE(t-dt, self.dx, self.yCc)
+        ### states at cell interfaces
+        for i in range(self.numberConservedQuantities):
+            self.U[i].uW, self.U[i].uE = self.lrState(self.U[i].u, 0, self.order)
+        if self.dim==2:
+            self.boundaryCondN(t-dt, self.dy, self.xCc)
+            self.boundaryCondS(t-dt, self.dy, self.xCc)
+            for i in range(self.numberConservedQuantities):
+                self.U[i].uS, self.U[i].uN = self.lrState(self.U[i].u, 1, self.order)
+        ### Fluxes
+        FX = self.numFluxFunX(self.U, dt, self.dx) # gives back a list
+        if self.numSourceFun == None:
+            if self.dim==1:
+                for i in range(self.numberConservedQuantities):
+                    self.U[i].u[self.order:-self.order] -= dt*FX[i]/self.dx
+            else:
+        ### Fluxes
+                FY = self.numFluxFunY(self.U, dt, self.dy) # gives back a list
+                for i in range(self.numberConservedQuantities):
+                    self.U[i].u[self.order:-self.order,self.order:-self.order] -= dt*(FX[i]/self.dx + FY[i]/self.dy)
+        else:
+        ### Sources
+            S = self.numSourceFun(self.U, dt, self.dx, self.dy)
+            if self.dim==1:
+                for i in range(self.numberConservedQuantities):
+                    self.U[i].u[self.order:-self.order] -= dt*(FX[i]/self.dx - S[i])
+            else:
+        ### Fluxes
+                FY = self.numFluxFunY(self.U, dt, self.dy) # gives back a list
+                for i in range(self.numberConservedQuantities):
+                    self.U[i].u[self.order:-self.order,self.order:-self.order] -= dt*(FX[i]/self.dx + FY[i]/self.dy - S[i])
+
+        return t

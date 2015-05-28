@@ -32,8 +32,9 @@ def initialCondFun(x):
 
 def linear(nx=1000, Tmax=1., order=1, limiter='minmod'):
 
+    dim = 1
 # generate instance of class
-    hcl = HyperbolicConsLaw(order, limiter, True)
+    hcl = HyperbolicConsLawNumSolver(dim, order, limiter, True)
 
 #set numerical Flux
     numFluxX = numFluxX_upwind
@@ -57,7 +58,7 @@ def linear(nx=1000, Tmax=1., order=1, limiter='minmod'):
     xCi = np.linspace(0,1,nx+1) # cell interfaces
     #a_ = -xCi + .5
     a_ = .25*np.ones_like(xCi)
-    hcl.setFluxParams(a = a_)
+    hcl.setFluxAndSourceParams(a = a_)
 
 # apply explicit time stepping
     t = 0.

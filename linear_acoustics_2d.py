@@ -98,8 +98,9 @@ def initialCondFun(xv, yv):
 
 def linear(nx=100, ny=100 ,Tmax=1., order=1, limiter='minmod', method='HLL2'):
 
+    dim = 2
 # generate instance of class
-    hcl = HyperbolicConsLaw(order, limiter, True)
+    hcl = HyperbolicConsLawNumSolver(dim, order, limiter, True)
 
 #set numerical Flux
     if method=='HLL2':
@@ -141,7 +142,7 @@ def linear(nx=100, ny=100 ,Tmax=1., order=1, limiter='minmod', method='HLL2'):
     #v0_ = np.ones((ny+1, nx))
     #v0_[yvi<0] = -1
 
-    hcl.setFluxParams(rho0 = rho0_, K0 = K0_, c0 = c0_, u0 = u0_, v0 = v0_)
+    hcl.setFluxAndSourceParams(rho0 = rho0_, K0 = K0_, c0 = c0_, u0 = u0_, v0 = v0_)
 
 # apply explicit time stepping
     t = 0.

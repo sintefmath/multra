@@ -2,6 +2,7 @@ import linear_1d as linear_1d
 import linear_2d as linear_2d
 import linear_acoustics_1d as linear_acoustics_1d
 import linear_acoustics_2d as linear_acoustics_2d
+import induction_equation_2d as induction_equation_2d
 
 import pylab as pl
 
@@ -26,6 +27,20 @@ def stillWorking():
     pl.colorbar()
     pl.figure(6)
     linear_acoustics_2d.linear(100, 105, 1.1, 2, 'minmod')
+    pl.colorbar()
+
+    pl.figure(5)
+    linear_acoustics_2d.linear(100, 105, 1.1, 1)
+    pl.colorbar()
+    pl.figure(6)
+    linear_acoustics_2d.linear(100, 105, 1.1, 2, 'minmod')
+    pl.colorbar()
+
+    pl.figure(5)
+    induction_equation_2d.linear(100, 105)
+    pl.colorbar()
+    pl.figure(6)
+    induction_equation_2d.linear(100, 105)
     pl.colorbar()
 
     pl.show()
