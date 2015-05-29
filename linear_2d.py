@@ -25,8 +25,9 @@ def initialCondFun(xv, yv):
 
 def linear(nx=100, ny=100 ,Tmax=1., order=1, limiter='minmod'):
 
+    dim = 2
 # generate instance of class
-    hcl = HyperbolicConsLaw(order, limiter, True)
+    hcl = HyperbolicConsLawNumSolver(dim, order, limiter, True)
 
 #set numerical Flux
     hcl.setNumericalFluxFuns(numFluxX_upwind, numFluxY_upwind, maxAbsEig)
@@ -47,7 +48,9 @@ def linear(nx=100, ny=100 ,Tmax=1., order=1, limiter='minmod'):
 # set flux parameters
     a_ = .5*np.ones((ny,nx+1))
     b_ = .5*np.ones((ny+1,nx))
-    hcl.setFluxParams(a = a_, b = b_)
+    hcl.setFluxAndSourceParams(a = a_, b = b_)
+
+    hcl.selfCheck()
 
 # apply explicit time stepping
     t = 0.
