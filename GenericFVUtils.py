@@ -110,6 +110,27 @@ def composeBC_W(bcfun, dim, order):
                     for i in range(self.numberConservedQuantities):
                         self.U[i].u[:, 0] = self.U[i].u[:, 3]
                         self.U[i].u[:, 1] = self.U[i].u[:, 2]
+    elif (bcfun == "Periodic") or (bcfun == "periodic"):
+        if dim==1:
+            if order==1:
+                def boundaryCondW(self, t, dx, y):
+                    for i in range(self.numberConservedQuantities):
+                        self.U[i].u[ 0] = self.U[i].u[-2]
+            else:
+                def boundaryCondW(self, t, dx, y):
+                    for i in range(self.numberConservedQuantities):
+                        self.U[i].u[ 0] = self.U[i].u[-4]
+                        self.U[i].u[ 1] = self.U[i].u[-3]
+        else:
+            if order==1:
+                def boundaryCondW(self, t, dx, y):
+                    for i in range(self.numberConservedQuantities):
+                        self.U[i].u[:, 0] = self.U[i].u[:,-2]
+            else:
+                def boundaryCondW(self, t, dx, y):
+                    for i in range(self.numberConservedQuantities):
+                        self.U[i].u[:, 0] = self.U[i].u[:,-4]
+                        self.U[i].u[:, 1] = self.U[i].u[:,-3]
     else:
         if dim==1:
             if order==1:
@@ -159,6 +180,27 @@ def composeBC_E(bcfun, dim, order):
                     for i in range(self.numberConservedQuantities):
                         self.U[i].u[:, -1] = self.U[i].u[:, -4]
                         self.U[i].u[:, -2] = self.U[i].u[:, -3]
+    elif (bcfun == "Periodic") or (bcfun == "periodic"):
+        if dim==1:
+            if order==1:
+                def boundaryCondE(self, t, dx, y):
+                    for i in range(self.numberConservedQuantities):
+                        self.U[i].u[-1] = self.U[i].u[ 1]
+            else:
+                def boundaryCondE(self, t, dx, y):
+                    for i in range(self.numberConservedQuantities):
+                        self.U[i].u[-1] = self.U[i].u[ 3]
+                        self.U[i].u[-2] = self.U[i].u[ 2]
+        else:
+            if order==1:
+                def boundaryCondE(self, t, dx, y):
+                    for i in range(self.numberConservedQuantities):
+                        self.U[i].u[:, -1] = self.U[i].u[:,  1]
+            else:
+                def boundaryCondE(self, t, dx, y):
+                    for i in range(self.numberConservedQuantities):
+                        self.U[i].u[:, -1] = self.U[i].u[:,  3]
+                        self.U[i].u[:, -2] = self.U[i].u[:,  2]
     else:
         if dim==1:
             if order==1:
@@ -197,6 +239,16 @@ def composeBC_S(bcfun, order):
                 for i in range(self.numberConservedQuantities):
                     self.U[i].u[0, :] = self.U[i].u[3, :]
                     self.U[i].u[1, :] = self.U[i].u[2, :]
+    elif (bcfun == "Periodic") or (bcfun == "periodic"):
+        if order==1:
+            def boundaryCondS(self, t, dx, y):
+                for i in range(self.numberConservedQuantities):
+                    self.U[i].u[0, :] = self.U[i].u[-2, :]
+        else:
+            def boundaryCondS(self, t, dx, y):
+                for i in range(self.numberConservedQuantities):
+                    self.U[i].u[0, :] = self.U[i].u[-4, :]
+                    self.U[i].u[1, :] = self.U[i].u[-3, :]
     else:
         if order==1:
             def boundaryCondS(self, t, dx, y):
@@ -222,6 +274,16 @@ def composeBC_N(bcfun, order):
                 for i in range(self.numberConservedQuantities):
                     self.U[i].u[-1, :] = self.U[i].u[-4, :]
                     self.U[i].u[-2, :] = self.U[i].u[-3, :]
+    elif (bcfun == "Periodic") or (bcfun == "periodic"):
+        if order==1:
+            def boundaryCondN(self, t, dy, x):
+                for i in range(self.numberConservedQuantities):
+                    self.U[i].u[-1, :] = self.U[i].u[ 1, :]
+        else:
+            def boundaryCondN(self, t, dy, x):
+                for i in range(self.numberConservedQuantities):
+                    self.U[i].u[-1, :] = self.U[i].u[ 3, :]
+                    self.U[i].u[-2, :] = self.U[i].u[ 2, :]
     else:
         if order==1:
             def boundaryCondN(self, t, dy, x):
@@ -622,3 +684,91 @@ class HyperbolicConsLawNumSolver:
                     self.U[i].u[self.order:-self.order,self.order:-self.order] -= dt*(FX[i]/self.dx + FY[i]/self.dy - S[i])
 
         return t
+
+def apply_BC_W(u, bcfun, dim, order):
+    if (bcfun == None) or (bcfun == 'Neumann'):
+        if dim==1:
+            if order==1:
+                u[ 0] = u[ 1]
+            else:
+                u[ 0] = u[ 3]
+                u[ 1] = u[ 2]
+        else:
+            if order==1:
+                u[:, 0] = u[:, 1]
+            else:
+                u[:, 0] = u[:, 3]
+                u[:, 1] = u[:, 2]
+    elif (bcfun == "Periodic") or (bcfun == "periodic"):
+        if dim==1:
+            if order==1:
+                u[ 0] = u[-2]
+            else:
+                u[ 0] = u[-4]
+                u[ 1] = u[-3]
+        else:
+            if order==1:
+                u[:, 0] = u[:,-2]
+            else:
+                u[:, 0] = u[:,-4]
+                u[:, 1] = u[:,-3]
+    return u
+
+def apply_BC_E(u, bcfun, dim, order):
+    if (bcfun == None) or (bcfun == 'Neumann'):
+        if dim==1:
+            if order==1:
+                u[-1] = u[-2]
+            else:
+                u[-1] = u[-4]
+                u[-2] = u[-3]
+        else:
+            if order==1:
+                u[:, -1] = u[:, -2]
+            else:
+                u[:, -1] = u[:, -4]
+                u[:, -2] = u[:, -3]
+    elif (bcfun == "Periodic") or (bcfun == "periodic"):
+        if dim==1:
+            if order==1:
+                u[-1] = u[ 1]
+            else:
+                u[-1] = u[ 3]
+                u[-2] = u[ 2]
+        else:
+            if order==1:
+                u[:, -1] = u[:,  1]
+            else:
+                u[:, -1] = u[:,  3]
+                u[:, -2] = u[:,  2]
+    return u
+
+def apply_BC_S(u, bcfun, order):
+    if (bcfun == None) or (bcfun == 'Neumann'):
+        if order==1:
+            u[0, :] = u[1, :]
+        else:
+            u[0, :] = u[3, :]
+            u[1, :] = u[2, :]
+    elif (bcfun == "Periodic") or (bcfun == "periodic"):
+        if order==1:
+            u[0, :] = u[-2, :]
+        else:
+            u[0, :] = u[-4, :]
+            u[1, :] = u[-3, :]
+    return u
+
+def apply_BC_N(u, bcfun, order):
+    if (bcfun == None) or (bcfun == 'Neumann'):
+        if order==1:
+            u[-1, :] = u[-2, :]
+        else:
+            u[-1, :] = u[-4, :]
+            u[-2, :] = u[-3, :]
+    elif (bcfun == "Periodic") or (bcfun == "periodic"):
+        if order==1:
+            u[-1, :] = u[ 1, :]
+        else:
+            u[-1, :] = u[ 3, :]
+            u[-2, :] = u[ 2, :]
+    return u
