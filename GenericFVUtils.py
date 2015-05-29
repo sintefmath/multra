@@ -439,11 +439,10 @@ class HyperbolicConsLawNumSolver:
 
     def selfCheck(self):
 ### Checking if functions are called in the right order
-        assert self.dim == uinit[0].ndim, "Error: Dimensions of initial conditions do not match registerd dimension of problem."
         assert self.boundaryCondSet == True, "Error: No boundary conditions set for U."
         assert self.initUSet == True, "Error: No initial condition set for U."
         if self.fluxesSet == False:
-            "Warning: No numerical flux functions set."
+            print("Warning: No numerical flux functions set.")
 ###
 
 

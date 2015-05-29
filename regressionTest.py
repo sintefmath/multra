@@ -29,18 +29,8 @@ def stillWorking():
     linear_acoustics_2d.linear(100, 105, 1.1, 2, 'minmod')
     pl.colorbar()
 
-    pl.figure(5)
-    linear_acoustics_2d.linear(100, 105, 1.1, 1)
-    pl.colorbar()
-    pl.figure(6)
-    linear_acoustics_2d.linear(100, 105, 1.1, 2, 'minmod')
-    pl.colorbar()
-
-    pl.figure(5)
-    induction_equation_2d.linear(100, 105)
-    pl.colorbar()
-    pl.figure(6)
-    induction_equation_2d.linear(100, 105)
+    pl.figure(7)
+    induction_equation_2d.linear(100, 105, .75, 2)
     pl.colorbar()
 
     pl.show()

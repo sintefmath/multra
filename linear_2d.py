@@ -50,6 +50,8 @@ def linear(nx=100, ny=100 ,Tmax=1., order=1, limiter='minmod'):
     b_ = .5*np.ones((ny+1,nx))
     hcl.setFluxAndSourceParams(a = a_, b = b_)
 
+    hcl.selfCheck()
+
 # apply explicit time stepping
     t = 0.
 # flux is linear, i.e., eigenvalues are independent of time

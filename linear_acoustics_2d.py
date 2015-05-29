@@ -144,6 +144,8 @@ def linear(nx=100, ny=100 ,Tmax=1., order=1, limiter='minmod', method='HLL2'):
 
     hcl.setFluxAndSourceParams(rho0 = rho0_, K0 = K0_, c0 = c0_, u0 = u0_, v0 = v0_)
 
+    hcl.selfCheck()
+
 # apply explicit time stepping
     t = 0.
 # flux is linear, i.e., eigenvalues are independent of time
