@@ -354,22 +354,22 @@ class HyperbolicConsLawNumSolver:
     initUSet = False
     numberConservedQuantities = None
 
-    def __init__(self, dim, order, limiter, linearFlux = False, nonConsFlux = False):
+    def __init__(self, dim, order, limiter, dtGiven = False, nonConsFlux = False):
         self.dim = dim
         self.order = order
         self.limiter = limiter
         self.isNonConservative = nonConsFlux
         if nonConsFlux:
-            if linearFlux:
-                self.timeStepExplicit = self.timeStepExplicit_Nonconservative_linearFlux
+            if dtGiven:
+                self.timeStepExplicit = self.timeStepExplicit_Nonconservative_dtGiven
             else:
                 self.timeStepExplicit = self.timeStepExplicit_Nonconservative
         else:
-            if linearFlux:
+            if dtGiven:
                 if order==1:
-                    self.timeStepExplicit = self.timeStepExplicitOrd1_linearFlux
+                    self.timeStepExplicit = self.timeStepExplicitOrd1_dtGiven
                 else:
-                    self.timeStepExplicit = self.timeStepExplicitOrd2_linearFlux
+                    self.timeStepExplicit = self.timeStepExplicitOrd2_dtGiven
             else:
                 if order==1:
                     self.timeStepExplicit = self.timeStepExplicitOrd1
@@ -537,7 +537,7 @@ class HyperbolicConsLawNumSolver:
 
         return t
 
-    def timeStepExplicitOrd1_linearFlux(self, t, dt):
+    def timeStepExplicitOrd1_dtGiven(self, t, dt):
         t=t+dt
 
         ### apply boundary conditions
@@ -565,7 +565,7 @@ class HyperbolicConsLawNumSolver:
 
         return t
 
-    def timeStepExplicitOrd2_linearFlux(self, t, dt):
+    def timeStepExplicitOrd2_dtGiven(self, t, dt):
         t=t+dt
 
         for i in range(self.numberConservedQuantities):
@@ -645,7 +645,7 @@ class HyperbolicConsLawNumSolver:
 
         return t
 
-    def timeStepExplicit_Nonconservative_linearFlux(self, t, dt):
+    def timeStepExplicit_Nonconservative_dtGiven(self, t, dt):
         t=t+dt
 
         ### apply boundary conditions

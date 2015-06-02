@@ -259,13 +259,14 @@ def linear(nx=100, ny=100, Tmax=1.,example=1):
     #pl.pcolor(xv, yv, hcl.getU(0), cmap='RdBu')
     #pl.colorbar()
     #pl.figure(2)
-    pl.pcolor(xv, yv, hcl.getU(1), cmap='RdBu')
+    #pl.pcolor(xv, yv, hcl.getU(1), cmap='RdBu')
+    pl.imshow(hcl.getU(0), cmap='RdBu') 
     #pl.colorbar()
 
     [ca, cb] = initialCondFun(xv, yv)
     print("abs cons. error = ", abs(hcl.dx*hcl.dy*(np.sum(ca) - np.sum(hcl.getU(0)))) , abs(hcl.dx*hcl.dy*(np.sum(cb) - np.sum(hcl.getU(1)))) )
 
-    print("rel cons. error = ", abs(np.sum(ca) - np.sum(hcl.getU(0)))/abs(np.sum(ca)) , abs(np.sum(cb) - np.sum(hcl.getU(1)))/abs(np.sum(cb)) )
+    print("rel cons. error = ", abs(np.sum(ca) - np.sum(hcl.getU(0)))/(1e-14+abs(np.sum(ca))) , abs(np.sum(cb) - np.sum(hcl.getU(1)))/(1e-14+abs(np.sum(cb))) )
 
 
     return hcl
