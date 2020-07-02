@@ -1,6 +1,8 @@
 import numpy as np
 from copy import copy as cp
 
+import time
+
 from openGLUtils import *
 
 def slope(u,limiter):
@@ -226,6 +228,7 @@ def main(n,o, limiter, solver):
     T = 20
     Tintervals = np.linspace(0.,1.*T,num=T+1)
     for ti in range(Tintervals.shape[0]-1):
+        time.sleep(0.1)
         roads = ConsLaw(roads, intersections, Tintervals[ti:ti+2], limiter, solver, o)
 
 
