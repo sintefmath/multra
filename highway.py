@@ -1,9 +1,26 @@
 import numpy as np
 from copy import copy as cp
 
+import matplotlib.pyplot as pl
+
 import time
 
-from openGLUtils import *
+count=0
+
+def draw(roads, t, o, save):
+    pl.figure(1)
+    pl.clf()
+    for i in range(len(roads)):
+        x=np.linspace(roads[i].geo_IN[0], roads[i].geo_OUT[0], roads[i].n)
+        pl.plot(x, roads[i].rho[o:-o]);
+    pl.ylim([0,1.1])
+    pl.title("t = "+str(t))
+    if save:
+        pl.savefig("sim_"+str(int(t)).zfill(4))
+    else:
+        pl.show()
+
+
 
 def slope(u,limiter):
     a = u[1:]-u[0:-1]
@@ -30,7 +47,8 @@ class Road:
     q_tmp = None
 
     Umax = None
-    bc_NEIGHBOUR = None
+    roadIn = None
+    roadOut = None
 
     def rhoLR(self, o, limiter):
         if o==1:
@@ -43,17 +61,18 @@ class Road:
         return rhoL, rhoR
 
     def maxEig(self):
-        DF = Flux_drho(self.rho, self.Umax)
+        DF = Flux_drho(self.rho, self.Umax, self.rhomax)
         return max(np.abs(DF))
 
     def maketmp(self):
         self.rho_tmp = 1.*self.rho
         self.q_tmp = 1.*self.q
 
-    def initialize(self, n, geo_IN, geo_OUT, o, Umax=1.):
-        self.rho = np.zeros((n+2*o,1))
+    def initialize(self, n, geo_IN, geo_OUT, o, Umax=1., rhomax=1., rhoinit=0.):
+        self.rho = rhoinit + np.zeros((n+2*o,1))
         self.q = np.zeros((n+2*o,1))
         self.Umax = Umax
+        self.rhomax = rhomax
         self.geo_IN = geo_IN
         self.geo_OUT = geo_OUT
         self.dx = np.linalg.norm(geo_IN - geo_OUT)/(1.*n)
@@ -84,10 +103,11 @@ class Intersections:
                 roads[i].rho = BC_outflow(roads[i].rho,o,t)
         else:
             redLight = False
-            for i in range(int(self.fixedRedTimes.size/2)):
-                if (self.fixedRedTimes[2*i]<=t and t<self.fixedRedTimes[2*i+1]):
-                    redLight = True
-                    break
+            if self.fixedRedTimes:
+                for i in range(int(self.fixedRedTimes.size/2)):
+                    if (self.fixedRedTimes[2*i]<=t and t<self.fixedRedTimes[2*i+1]):
+                        redLight = True
+                        break
             if redLight:
                 for r in self.roads_OUT:
                     for i in range(1,o+1):
@@ -104,17 +124,29 @@ class Intersections:
                             roads[rOut].rho[o-i] = roads[rIn].rho[-o-i]
                             roads[rIn].rho[-o+i-1] = roads[rOut].rho[o+i-1]
 
-def Flux(rho, Umax):
-    return rho*Umax*(1.-rho)
+def Flux(rho, Umax, rhomax):
+    return rho*Umax*(1.-rho/rhomax)
 
-def Flux_drho(rho, Umax):
-    return Umax*(1.-2.*rho)
+def Flux_drho(rho, Umax, rhomax):
+    return Umax*(1.-2.*rho/rhomax)
+
+def demand(rho, Umax, rhomax):
+    if rho <= 0.5*rhomax:
+        return Flux(rho, Umax, rhomax)
+    else:
+        return Flux(0.5*rhomax, Umax, rhomax)
+
+def supply(rho, Umax, rhomax):
+    if rho <= 0.5*rhomax:
+        return Flux(0.5*rhomax, Umax, rhomax)
+    else:
+        return Flux(rho, Umax, rhomax)
+
 
 def ConsLaw(roads, intersections, Tinterval, limiter, solver, o):
 
     t = cp(Tinterval[0])
 
-    count = 0
     while t<Tinterval[1]:
 
         eig = roads[0].maxEig()/roads[0].dx
@@ -145,35 +177,43 @@ def ConsLaw(roads, intersections, Tinterval, limiter, solver, o):
                 rhoL, rhoR = roads[i].rhoLR(o, limiter)
                 if solver=='LxF':
                     # Lax Friedrichs
-                    Frho = 0.5*(Flux(rhoL, roads[i].Umax) + Flux(rhoR, roads[i].Umax)) - 0.5*roads[i].dx/dt*(rhoR - rhoL)
+                    Frho = 0.5*(Flux(rhoL, roads[i].Umax, roads[i].rhomax) + Flux(rhoR, roads[i].Umax, roads[i].rhomax)) - 0.5*roads[i].dx/dt*(rhoR - rhoL)
                 if solver=='upwind':
                     s = 1.-(rhoL+rhoR)
                     Frho = np.zeros_like(rhoL)
-                    Frho[np.nonzero((s>0.)&(rhoL<.5))] = Flux(rhoL[np.nonzero((s>0.)&(rhoL<.5))], roads[i].Umax)
-                    Frho[np.nonzero((s<0.)&(rhoR>.5))] = Flux(rhoR[np.nonzero((s<0.)&(rhoR>.5))], roads[i].Umax)
+                    Frho[np.nonzero((s>0.)&(rhoL<.5))] = Flux(rhoL[np.nonzero((s>0.)&(rhoL<.5))], roads[i].Umax, roads[i].rhomax)
+                    Frho[np.nonzero((s<0.)&(rhoR>.5))] = Flux(rhoR[np.nonzero((s<0.)&(rhoR>.5))], roads[i].Umax, roads[i].rhomax)
                     #Frho[np.nonzero((s>0.))] = Flux(rhoL[np.nonzero((s>0.))])
                     #Frho[np.nonzero((s<0.))] = Flux(rhoR[np.nonzero((s<0.))])
-                    Frho[np.nonzero((rhoL>.5)&(.5>rhoR))] = Flux(.5, roads[i].Umax)
+                    Frho[np.nonzero((rhoL>.5)&(.5>rhoR))] = Flux(.5, roads[i].Umax, roads[i].rhomax)
+
+                ri = roads[i].roadIn
+                ro = roads[i].roadOut
+                if ri>-1:
+                    Frho[0] = min(demand(rhoL[0], roads[ri].Umax, roads[ri].rhomax),
+                                  supply(rhoR[0], roads[ i].Umax, roads[ri].rhomax))
+                if ro>-1:
+                    Frho[-1] = min(demand(rhoL[-1], roads[ i].Umax, roads[ i].rhomax),
+                                   supply(rhoR[-1], roads[ro].Umax, roads[ro].rhomax))
+
                 roads[i].rho[o:-o] -= dt/roads[i].dx*(Frho[1:] - Frho[0:-1])
         # end loop for order
         if o==2:
             for i in range(len(roads)):
                 roads[i].rho = 0.5*(roads[i].rho + roads[i].rho_tmp)
 
-        draw(roads, t, o, Tinterval, count)
-
     # end while
     return roads
 
 def BC_inflow(rho,o,t):
-    rho[0] = max(0,np.sin(6*t))
+    rho[0] = 0.5#max(0,np.sin(6*t))
     if o==2:
         rho[1] = cp(rho[0])
     return rho
 
 def BC_outflow(rho,o,t):
     for i in range(1,o+1):
-        rho[-o+i-1] = rho[-o+i-2]
+        rho[-o+i-1] = cp(rho[-o+i-2])
     return rho
 
 #def BC_coupleGreen(rho,o,roadIn, roadOut):
@@ -187,6 +227,9 @@ def BC_outflow(rho,o,t):
 #        rho[roadIn,-o+i-1] = 1.
 #        rho[roadOut,o-i] = 0.
 #    return rho
+
+
+
 
 def minmod(a,b):
     return 0.5*(np.sign(a)+np.sign(b))*np.minimum(np.abs(a),np.abs(b))
@@ -208,28 +251,41 @@ def mc(x,y,z):
 
 def main(n,o, limiter, solver):
 
-    roads = [Road() for i in range(4)]
-    #for i in range(len(roads)):
-    #    roads[i].initializeRoad(n, np.array((-2.+i*2,.0)), np.array((-0.+i*2,0.)), o)
+    roads = [Road() for i in range(3)]
 
-    roads[0].initialize(n,        np.array((-2.0,0.0)), np.array((-1.0,0.0)), o)
-    roads[1].initialize(int(n/2), np.array((-1.0,0.0)), np.array(( -1.0,1.0)), o)
-    roads[2].initialize(int(n/2), np.array(( -1,1.0)), np.array(( -1+0.4,1.0)), o)
-    roads[3].initialize(int(n/2), np.array(( 0.4-1,1.0)), np.array(( 0.4-1,0.0)), o)
-    
-    intersections = [Intersections() for i in range(5)]
+    roads[0].initialize(n,        np.array((-10.0,0.0)), np.array((0.0,0.0)), o, 1, 1, 0.)
+    roads[1].initialize(int(n/2), np.array((0.0,0.0)), np.array((1.0,0.0)), o, .1, 1, 0.)
+    roads[2].initialize(int(n/2), np.array((1.0,0.0)), np.array((10.0,0.0)), o, 1, 1, 0.)
+
+    roads[0].roadIn=-1
+    roads[0].roadOut=1
+    roads[1].roadIn=0
+    roads[1].roadOut=2
+    roads[2].roadIn=1
+    roads[2].roadOut=-1
+
+    intersections = [Intersections() for i in range(4)]
 
     intersections[0].initialize(np.array(([-1])), np.array(([ 0])))
-    intersections[1].initialize(np.array(([ 0])), np.array(([ 1])), np.mat(([1])), np.array((0.,6., 10.,12., 15.,16., 17.,20.)) )
-    intersections[2].initialize(np.array(([ 1])), np.array(([ 2])), np.mat(([1])), np.array((6.,10., 12.,15., 16.,17., 19.,20.)) )
-    intersections[3].initialize(np.array(([ 2])), np.array(([ 3])), np.mat(([1])), np.array((8.,10., 12.,15., 16.,17., 19.,20.)) )
-    intersections[4].initialize(np.array(([ 3])), np.array(([-1])))
+    intersections[1].initialize(np.array(([ 0])), np.array(([ 1])))
+    intersections[2].initialize(np.array(([ 1])), np.array(([ 2])))
+    intersections[3].initialize(np.array(([ 2])), np.array(([-1])))
 
-    T = 30
+    T = 50
     Tintervals = np.linspace(0.,1.*T,num=(T+1)*10)
+    tshow=1
     for ti in range(Tintervals.shape[0]-1):
-        #time.sleep(0.1)
+        if Tintervals[ti+2]>30:
+            roads[1].Umax = 1.
         roads = ConsLaw(roads, intersections, Tintervals[ti:ti+2], limiter, solver, o)
+        #print(roads[0].rho)
+        #print(roads[1].rho)
+        #print(roads[2].rho)
+        #return
+        if Tintervals[ti+2]>tshow:
+            draw(roads, Tintervals[ti+2], o, True)
+            tshow+=1
+
 
 
 if __name__ == "__main__":
@@ -258,13 +314,12 @@ if __name__ == "__main__":
         method = 'upwind'
     else:
         method = opts.method
+        raise Exception("Not yet ready!")
 
     if opts.limiter == None:
         limiter = 'minmod'
     else:
         limiter = opts.limiter
-
-    initGL()
 
     main(n,o,limiter,method)
 
