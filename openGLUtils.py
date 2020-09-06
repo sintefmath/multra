@@ -40,36 +40,34 @@ def initGL():
     glMatrixMode( GL_MODELVIEW );
     glLoadIdentity();
 
-def draw(roads, t, o, Tinterval, count):
-    if (t > Tinterval[0] + count/100.*(Tinterval[1]-Tinterval[0])):
-        count += 1
-        global width
-        global height
-        n_height = glutGet(GLUT_WINDOW_HEIGHT);
-        n_width = glutGet(GLUT_WINDOW_WIDTH);
-        if (n_height != height or n_width!= width):
-            width = n_width
-            height = n_height
-            if width>height:
-                glViewport(int((width-height)/2),0,height,height)
-            else:
-                glViewport(0,int((height-width)/2),width,width)
-            glClear(GL_COLOR_BUFFER_BIT)
-        #glColor3f(0.0,0.0, 0.0)
-        glColor3ub( 255, 255, 255 );
-        glEnable( GL_TEXTURE_1D );
-        glBindTexture( GL_TEXTURE_1D, texture );
-        for i in range(len(roads)):
-            glTexImage1D(GL_TEXTURE_1D, 0, GL_RED, roads[i].n, 0, GL_RED, GL_FLOAT, roads[i].rho[o:-o]);
+def draw(roads, t, o, Tinterval):
+    global width
+    global height
+    n_height = glutGet(GLUT_WINDOW_HEIGHT);
+    n_width = glutGet(GLUT_WINDOW_WIDTH);
+    if (n_height != height or n_width!= width):
+        width = n_width
+        height = n_height
+        if width>height:
+            glViewport(int((width-height)/2),0,height,height)
+        else:
+            glViewport(0,int((height-width)/2),width,width)
+        glClear(GL_COLOR_BUFFER_BIT)
+    #glColor3f(0.0,0.0, 0.0)
+    glColor3ub( 255, 255, 255 );
+    glEnable( GL_TEXTURE_1D );
+    glBindTexture( GL_TEXTURE_1D, texture );
+    for i in range(len(roads)):
+        glTexImage1D(GL_TEXTURE_1D, 0, GL_RED, roads[i].n, 0, GL_RED, GL_FLOAT, roads[i].rho[o:-o]);
 
-            glLineWidth( 10 );
-            glEnable(GL_LINE_SMOOTH);
-            glBegin( GL_LINES );
-            glTexCoord1i( 0 );
-            glVertex2f( roads[i].geo_IN[0], roads[i].geo_IN[1]);
-            glTexCoord1i( 1 );
-            glVertex2f( roads[i].geo_OUT[0], roads[i].geo_OUT[1]);
-            glEnd();
+        glLineWidth( 10 );
+        glEnable(GL_LINE_SMOOTH);
+        glBegin( GL_LINES );
+        glTexCoord1i( 0 );
+        glVertex2f( roads[i].geo_IN[0], roads[i].geo_IN[1]);
+        glTexCoord1i( 1 );
+        glVertex2f( roads[i].geo_OUT[0], roads[i].geo_OUT[1]);
+        glEnd();
 
-        glFlush()
+    glFlush()
 
