@@ -25,40 +25,44 @@ def plot(roads, t, o, save):
 
 def main(n,o, limiter, solver):
 
-    roads = [Road() for i in range(3)]
+    roads = [Road() for i in range(5)]
 
-    roads[0].initialize(n,        np.array((-10.0,0.0)), np.array((0.0,0.0)), o, 1, 1, 0.)
-    roads[1].initialize(int(n/2), np.array((0.0,0.0)), np.array((1.0,0.0)), o, .1, 1, 0.)
-    roads[2].initialize(int(n/2), np.array((1.0,0.0)), np.array((10.0,0.0)), o, 1, 1, 0.)
+    roads[0].initialize(n, np.array(( 0.0,0.0)), np.array((10.0,0.0)), o,  1, 1, 0.)
+    roads[1].initialize(n, np.array((10.0,0.0)), np.array((20.0,0.0)), o,  1, 1, 0.)
+    roads[2].initialize(n, np.array((20.0,0.0)), np.array((30.0,0.0)), o,  1, 1, 0.)
+    roads[3].initialize(3, np.array((30.0,0.0)), np.array((30.1,0.0)), o, .5, 1, 0.)
+    roads[4].initialize(n, np.array((30.1,0.0)), np.array((34.0,0.0)), o,  1, 1, 0.)
 
     roads[0].roadIn=-1
     roads[0].roadOut=1
     roads[1].roadIn=0
     roads[1].roadOut=2
     roads[2].roadIn=1
-    roads[2].roadOut=-1
+    roads[2].roadOut=3
+    roads[3].roadIn=2
+    roads[3].roadOut=4
+    roads[4].roadIn=3
+    roads[4].roadOut=-1
 
-    intersections = [Intersections() for i in range(4)]
+    intersections = [Intersections() for i in range(6)]
 
     intersections[0].initialize(np.array(([-1])), np.array(([ 0])))
     intersections[1].initialize(np.array(([ 0])), np.array(([ 1])))
     intersections[2].initialize(np.array(([ 1])), np.array(([ 2])))
-    intersections[3].initialize(np.array(([ 2])), np.array(([-1])))
+    intersections[3].initialize(np.array(([ 2])), np.array(([ 3])), None, np.array((0,80)))
+    intersections[4].initialize(np.array(([ 3])), np.array(([ 4])))
+    intersections[5].initialize(np.array(([ 4])), np.array(([-1])))
 
-    T = 50
-    Tintervals = np.linspace(0.,1.*T,num=(T+1)*10)
+    T = 200
+    Tintervals = np.linspace(0.,1.*T,100)
     tshow=1
     for ti in range(Tintervals.shape[0]-1):
-        if Tintervals[ti+1]>30:
-            roads[1].Umax = 1.
+        #if Tintervals[ti+1]>40:
+        #    roads[1].Umax = 1.
         roads = ConsLaw(roads, intersections, Tintervals[ti:ti+2], limiter, solver, o)
-        #print(roads[0].rho)
-        #print(roads[1].rho)
-        #print(roads[2].rho)
-        #return
         if Tintervals[ti+1]>tshow:
-            #plot(roads, Tintervals[ti+1], o, False)
-            draw(roads, Tintervals[ti+1], o, Tintervals)
+            plot(roads, Tintervals[ti+1], o, True)
+            #draw(roads, Tintervals[ti+1], o, Tintervals)
             tshow+=1
 
 
@@ -96,7 +100,7 @@ if __name__ == "__main__":
     else:
         limiter = opts.limiter
 
-    initGL()
+    #initGL()
 
     main(n,o,limiter,method)
 

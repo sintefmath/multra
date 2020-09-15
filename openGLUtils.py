@@ -2,6 +2,9 @@ from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
 
+import numpy as np
+from copy import copy as cp
+
 texture = 0
 width = 640
 height = 480
@@ -57,8 +60,20 @@ def draw(roads, t, o, Tinterval):
     glColor3ub( 255, 255, 255 );
     glEnable( GL_TEXTURE_1D );
     glBindTexture( GL_TEXTURE_1D, texture );
+    #glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    #glEnable(GL_BLEND);
     for i in range(len(roads)):
-        glTexImage1D(GL_TEXTURE_1D, 0, GL_RED, roads[i].n, 0, GL_RED, GL_FLOAT, roads[i].rho[o:-o]);
+        r=cp(roads[i].rho[o:-o][0])
+        tex=np.zeros((roads[i].n, 1))
+        red=0
+        green=1
+        blue=2
+        yellow = np.zeros(roads[i].n)
+        #tex[:,green] = -2*r+1
+        #tex[:,red] = 2*r-1
+        tex[:,red] = r
+        #tex[:,green] = r
+        glTexImage1D(GL_TEXTURE_1D, 0, GL_RED, roads[i].n, 0, GL_RED, GL_FLOAT, tex);
 
         glLineWidth( 10 );
         glEnable(GL_LINE_SMOOTH);

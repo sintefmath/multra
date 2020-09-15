@@ -104,18 +104,22 @@ class Intersections:
                             roads[rIn].rho[-o+i-1] = roads[rOut].rho[o+i-1]
 
 def Flux(rho, Umax, rhomax):
+    #r=np.maximum(rho,rhomax)
     return rho*Umax*(1.-rho/rhomax)
 
 def Flux_drho(rho, Umax, rhomax):
+    #r=np.maximum(rho,rhomax)
     return Umax*(1.-2.*rho/rhomax)
 
 def demand(rho, Umax, rhomax):
-    if rho <= 0.5*rhomax:
+    #r=np.maximum(rho,rhomax)
+    if r <= 0.5*rhomax:
         return Flux(rho, Umax, rhomax)
     else:
         return Flux(0.5*rhomax, Umax, rhomax)
 
 def supply(rho, Umax, rhomax):
+    #r=np.maximum(rho,rhomax)
     if rho <= 0.5*rhomax:
         return Flux(0.5*rhomax, Umax, rhomax)
     else:
@@ -125,7 +129,6 @@ def supply(rho, Umax, rhomax):
 def ConsLaw(roads, intersections, Tinterval, limiter, solver, o):
 
     t = cp(Tinterval[0])
-
     while t<Tinterval[1]:
 
         eig = roads[0].maxEig()/roads[0].dx
@@ -158,13 +161,19 @@ def ConsLaw(roads, intersections, Tinterval, limiter, solver, o):
                     # Lax Friedrichs
                     Frho = 0.5*(Flux(rhoL, roads[i].Umax, roads[i].rhomax) + Flux(rhoR, roads[i].Umax, roads[i].rhomax)) - 0.5*roads[i].dx/dt*(rhoR - rhoL)
                 if solver=='upwind':
-                    s = 1.-(rhoL+rhoR)
+                    Aj = np.zeros_like(rhoL)
+                    Aj[np.nonzero((np.abs(rhoL-rhoR)<1e-5))] = Flux_drho(rhoL[np.nonzero((np.abs(rhoL-rhoR)<1e-5))], roads[i].Umax, roads[i].rhomax)
+                    tmp=Flux(rhoR, roads[i].Umax, roads[i].rhomax) - Flux(rhoL, roads[i].Umax, roads[i].rhomax)
+                    Aj[np.abs(rhoL-rhoR)>=1e-5] = np.divide(tmp[np.abs(rhoL-rhoR)>=1e-5], (rhoR-rhoL)[np.nonzero((np.abs(rhoL-rhoR)>=1e-5))])
                     Frho = np.zeros_like(rhoL)
-                    Frho[np.nonzero((s>0.)&(rhoL<.5))] = Flux(rhoL[np.nonzero((s>0.)&(rhoL<.5))], roads[i].Umax, roads[i].rhomax)
-                    Frho[np.nonzero((s<0.)&(rhoR>.5))] = Flux(rhoR[np.nonzero((s<0.)&(rhoR>.5))], roads[i].Umax, roads[i].rhomax)
-                    #Frho[np.nonzero((s>0.))] = Flux(rhoL[np.nonzero((s>0.))])
-                    #Frho[np.nonzero((s<0.))] = Flux(rhoR[np.nonzero((s<0.))])
-                    Frho[np.nonzero((rhoL>.5)&(.5>rhoR))] = Flux(.5, roads[i].Umax, roads[i].rhomax)
+                    Frho[np.nonzero((Aj>=0))] = Flux(rhoL[np.nonzero((Aj>=0))], roads[i].Umax, roads[i].rhomax)
+                    Frho[np.nonzero((Aj<0))] = Flux(rhoR[np.nonzero((Aj<0))], roads[i].Umax, roads[i].rhomax)
+                    #s = 1.-(rhoL+rhoR)
+                    #Frho[np.nonzero((s>0.)&(rhoL<.5))] = Flux(rhoL[np.nonzero((s>0.)&(rhoL<.5))], roads[i].Umax, roads[i].rhomax)
+                    #Frho[np.nonzero((s<0.)&(rhoR>.5))] = Flux(rhoR[np.nonzero((s<0.)&(rhoR>.5))], roads[i].Umax, roads[i].rhomax)
+                    #Frho[np.nonzero((s>0.))] = Flux(rhoL[np.nonzero((s>0.))], roads[i].Umax, roads[i].rhomax)
+                    #Frho[np.nonzero((s<0.))] = Flux(rhoR[np.nonzero((s<0.))], roads[i].Umax, roads[i].rhomax)
+                    #Frho[np.nonzero((rhoL>.5)&(.5>rhoR))] = Flux(.5, roads[i].Umax, roads[i].rhomax)
 
                 ri = roads[i].roadIn
                 ro = roads[i].roadOut
@@ -185,7 +194,7 @@ def ConsLaw(roads, intersections, Tinterval, limiter, solver, o):
     return roads
 
 def BC_inflow(rho,o,t):
-    rho[0] = max(0,np.sin(6*t))
+    rho[0] = max(0,np.sin(t/2))
     if o==2:
         rho[1] = cp(rho[0])
     return rho
