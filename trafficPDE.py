@@ -113,7 +113,7 @@ def Flux_drho(rho, Umax, rhomax):
 
 def demand(rho, Umax, rhomax):
     #r=np.maximum(rho,rhomax)
-    if r <= 0.5*rhomax:
+    if rho <= 0.5*rhomax:
         return Flux(rho, Umax, rhomax)
     else:
         return Flux(0.5*rhomax, Umax, rhomax)
